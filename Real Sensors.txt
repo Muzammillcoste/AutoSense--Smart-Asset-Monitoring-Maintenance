@@ -1,0 +1,19 @@
+REAL SENSORS MOUNTED TO VEHICLE 1
+
+------GPS--------
+Sensor_type_id: 1
+Sensor_ID: 101
+Vehicle_ID: 1
+-----------------
+
+------TPMS--------
+Sensor_type_id: 2
+Sensor_ID: 102
+Vehicle_ID: 1
+------------------
+
+------TEMPERATURE--------
+Sensor_type_id: 3
+Sensor_ID: 103
+Vehicle_ID: 1
+-------------------------

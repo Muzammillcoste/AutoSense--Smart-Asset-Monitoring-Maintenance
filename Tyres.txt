@@ -1,0 +1,12 @@
+Address: 80:ea:ca:13:36:92
+Position: front_left
+
+Address: 81:ea:ca:23:2e:6c
+Position: front_right
+
+
+Address: 80:ea:ca:13:36:0D
+Position: rear_left
+
+Address: 81:ea:ca:23:31:56
+Position: rear_right
