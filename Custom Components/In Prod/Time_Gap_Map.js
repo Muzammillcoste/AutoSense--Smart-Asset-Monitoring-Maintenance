@@ -45,16 +45,13 @@ const MapComponent = () => {
     }
   }
 
-  // Fetch and sort alert data
   const fetchAlertData = async () => {
     try {
       const response = await axios.post(alertsWebhook, {})
       let alerts = response.data.actions[0].obj || []
-      // Sort alerts by createdAt in descending order (latest first)
       alerts = alerts.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       )
-      // Enrich alerts with vehicle names
       const enrichedAlerts = alerts.map((alert) => {
         const vehicle = vehicleData.find(
           (v) => String(v.vehicle_id) === String(alert.vehicle_id)
@@ -71,7 +68,6 @@ const MapComponent = () => {
   }
 
   // ---------------- LOCATION & CENTER ----------------
-  // Build the vehicle locations object from sensorReadings
   const vehicleLocations = {}
   sensorReadings.forEach((reading) => {
     if (reading.value.latitude && reading.value.longitude) {
@@ -82,65 +78,46 @@ const MapComponent = () => {
     }
   })
 
-  // Compute average center (still available if needed elsewhere)
-  const calculateAverageCenter = () => {
-    const coordinates = Object.values(vehicleLocations)
-    if (coordinates.length === 0) return { lat: 29.7321, lng: -95.342 }
-    const total = coordinates.reduce(
-      (acc, curr) => {
-        acc.lat += curr.lat
-        acc.lng += curr.lng
-        return acc
-      },
-      { lat: 0, lng: 0 }
-    )
-    return {
-      lat: total.lat / coordinates.length,
-      lng: total.lng / coordinates.length
-    }
-  }
+  // const calculateAverageCenter = () => {
+  //   const coordinates = Object.values(vehicleLocations)
+  //   if (coordinates.length === 0) return { lat: 29.7321, lng: -95.342 }
+  //   const total = coordinates.reduce(
+  //     (acc, curr) => {
+  //       acc.lat += curr.lat
+  //       acc.lng += curr.lng
+  //       return acc
+  //     },
+  //     { lat: 0, lng: 0 }
+  //   )
+  //   return {
+  //     lat: total.lat / coordinates.length,
+  //     lng: total.lng / coordinates.length
+  //   }
+  // }
 
-  // Determine the initial center based on vehicle_id "1"
-  // Use a fallback default if the vehicle is not found
   const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
-
-  const mapRef = useRef(null)
-  const onLoad = (map) => {
-    mapRef.current = map
-    map.setCenter(initialCenter)
-  }
-
-  // Optional: Once sensorReadings update, recenter if vehicle 1’s location is found.
-  useEffect(() => {
-    if (mapRef.current && vehicleLocations['1']) {
-      mapRef.current.setCenter(vehicleLocations['1'])
-    }
-  }, [sensorReadings]) // You might adjust dependency if needed
 
   // ---------------- FETCH DATA ON MOUNT ----------------
   useEffect(() => {
     fetchVehicleData()
     fetchSensorData()
-  }, [])
+  }, [sensorReadings])
 
-  // Fetch alerts when vehicleData is available
   useEffect(() => {
     if (vehicleData.length > 0) {
       fetchAlertData()
     }
-  }, [vehicleData])
+  }, [vehicleData, alertData])
 
   // ---------------- LATEST READINGS ----------------
   const time_gap_mins = 15
 
   const latestReadings = vehicleData.map((vehicle) => {
-    // Get all readings for this vehicle
     const readings = sensorReadings.filter(
       (reading) => String(reading.vehicle_id) === String(vehicle.vehicle_id)
     )
     const currentTime = new Date()
 
-    // Helper function to get the latest value for a specific metric
     const getLatestValue = (metricFilter, valueExtractor) => {
       const metricReadings = readings
         .filter(metricFilter)
@@ -150,7 +127,7 @@ const MapComponent = () => {
         ? new Date(latestMetricReading.createdAt)
         : null
       const timeDifference = latestMetricTime
-        ? (currentTime - latestMetricTime) / 1000 // seconds
+        ? (currentTime - latestMetricTime) / 1000
         : Infinity
       const isStale = timeDifference > time_gap_mins * 60
 
@@ -168,35 +145,68 @@ const MapComponent = () => {
       )
       return speed <= 2 ? 0 : speed
     })()
+
     const latestEngineTemperature = getLatestValue(
       (r) => r.value.engine_temperature !== undefined,
       (r) => r.value.engine_temperature
     )
+
     const latestFrontLeftTyrePressure = getLatestValue(
       (r) => r.value.front_left?.pressure !== undefined,
       (r) => r.value.front_left.pressure
     )
+    const latestFrontLeftTyreTemperature = getLatestValue(
+      (r) => r.value.front_left?.temperature !== undefined,
+      (r) => r.value.front_left.temperature
+    )
+
     const latestFrontRightTyrePressure = getLatestValue(
       (r) => r.value.front_right?.pressure !== undefined,
       (r) => r.value.front_right.pressure
     )
+    const latestFrontRightTyreTemperature = getLatestValue(
+      (r) => r.value.front_right?.temperature !== undefined,
+      (r) => r.value.front_right.temperature
+    )
+
     const latestRearLeftTyrePressure = getLatestValue(
       (r) => r.value.rear_left?.pressure !== undefined,
       (r) => r.value.rear_left.pressure
     )
+    const latestRearLeftTyreTemperature = getLatestValue(
+      (r) => r.value.rear_left?.temperature !== undefined,
+      (r) => r.value.rear_left.temperature
+    )
+
     const latestRearRightTyrePressure = getLatestValue(
       (r) => r.value.rear_right?.pressure !== undefined,
       (r) => r.value.rear_right.pressure
+    )
+    const latestRearRightTyreTemperature = getLatestValue(
+      (r) => r.value.rear_right?.temperature !== undefined,
+      (r) => r.value.rear_right.temperature
     )
 
     return {
       ...vehicle,
       speed: latestSpeed,
       temperature: latestEngineTemperature,
-      front_left: latestFrontLeftTyrePressure,
-      front_right: latestFrontRightTyrePressure,
-      rear_left: latestRearLeftTyrePressure,
-      rear_right: latestRearRightTyrePressure
+      front_left: {
+        pressure: latestFrontLeftTyrePressure,
+        temperature: latestFrontLeftTyreTemperature
+      },
+      front_right: {
+        pressure: latestFrontRightTyrePressure,
+        temperature: latestFrontRightTyreTemperature
+      },
+      rear_left: {
+        pressure: latestRearLeftTyrePressure,
+        temperature: latestRearLeftTyreTemperature
+      },
+      rear_right: {
+        pressure: latestRearRightTyrePressure,
+        temperature: latestRearRightTyreTemperature
+      }
     }
   })
 
@@ -334,12 +344,11 @@ const MapComponent = () => {
         `}
       </style>
       <div style={{ display: 'flex', gap: '20px' }}>
-        {/* MAP SECTION */}
         <div style={{ flex: 2 }}>
           <LoadScript googleMapsApiKey='AIzaSyBoailEnSezAE-hZK4pruLvZTOLA91YIlQ'>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
-              onLoad={onLoad}
+              center={initialCenter}
               zoom={14}
               onClick={() => setSelectedVehicleId(null)}
             >
@@ -347,7 +356,6 @@ const MapComponent = () => {
                 const vehicle = latestReadings.find(
                   (v) => String(v.vehicle_id) === String(vehicleId)
                 )
-                // Determine the icon to use:
                 const iconKey =
                   selectedVehicleId === vehicleId
                     ? 'selected'
@@ -369,10 +377,7 @@ const MapComponent = () => {
             </GoogleMap>
           </LoadScript>
         </div>
-
-        {/* VEHICLES & ALERTS */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Vehicles Card */}
           <div
             style={cardStyle}
             onMouseEnter={cardHover}
@@ -393,11 +398,11 @@ const MapComponent = () => {
                     <th style={tableHeaderStyle}>Name</th>
                     <th style={tableHeaderStyle}>Status</th>
                     <th style={tableHeaderStyle}>Speed (km/h)</th>
-                    <th style={tableHeaderStyle}>Engine Temperature (C)</th>
-                    <th style={tableHeaderStyle}>Front Left Tyre (PSI)</th>
-                    <th style={tableHeaderStyle}>Front Right Tyre (PSI)</th>
-                    <th style={tableHeaderStyle}>Rear Left Tyre (PSI)</th>
-                    <th style={tableHeaderStyle}>Rear Right Tyre (PSI)</th>
+                    <th style={tableHeaderStyle}>Engine Temperature (°C)</th>
+                    <th style={tableHeaderStyle}>Front Left Tyre (PSI, °C)</th>
+                    <th style={tableHeaderStyle}>Front Right Tyre (PSI, °C)</th>
+                    <th style={tableHeaderStyle}>Rear Left Tyre (PSI, °C)</th>
+                    <th style={tableHeaderStyle}>Rear Right Tyre (PSI, °C)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -437,16 +442,20 @@ const MapComponent = () => {
                         {vehicle.temperature.toFixed(2)}
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.front_left.toFixed(2)}
+                        {vehicle.front_left.pressure.toFixed(1)} (
+                        {Math.round(vehicle.front_left.temperature)} °C)
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.front_right.toFixed(2)}
+                        {vehicle.front_right.pressure.toFixed(1)} (
+                        {Math.round(vehicle.front_right.temperature)} °C)
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.rear_left.toFixed(2)}
+                        {vehicle.rear_left.pressure.toFixed(1)} (
+                        {Math.round(vehicle.rear_left.temperature)} °C)
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.rear_right.toFixed(2)}
+                        {vehicle.rear_right.pressure.toFixed(1)} (
+                        {Math.round(vehicle.rear_right.temperature)} °C)
                       </td>
                     </tr>
                   ))}
@@ -454,8 +463,6 @@ const MapComponent = () => {
               </table>
             </div>
           </div>
-
-          {/* Alerts Card */}
           <div
             style={cardStyle}
             onMouseEnter={cardHover}
