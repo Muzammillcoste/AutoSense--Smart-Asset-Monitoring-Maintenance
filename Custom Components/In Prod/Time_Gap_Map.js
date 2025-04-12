@@ -152,36 +152,36 @@ const MapComponent = () => {
       (r) => r.value.speed
     )
 
-    const latestTemperature = getLatestValue(
-      (r) => r.value.temperature !== undefined,
-      (r) => r.value.temperature
+    const latestEngineTemperature = getLatestValue(
+      (r) => r.value.engine_temperature !== undefined,
+      (r) => r.value.engine_temperature
     )
 
     const latestFrontLeftTyrePressure = getLatestValue(
-      (r) => r.value.tyre_data?.front_left !== undefined,
-      (r) => r.value.tyre_data.front_left
+      (r) => r.value.front_left?.pressure !== undefined,
+      (r) => r.value.front_left.pressure
     )
 
     const latestFrontRightTyrePressure = getLatestValue(
-      (r) => r.value.tyre_data?.front_right !== undefined,
-      (r) => r.value.tyre_data.front_right
+      (r) => r.value.front_right?.pressure !== undefined,
+      (r) => r.value.front_right.pressure
     )
 
     const latestRearLeftTyrePressure = getLatestValue(
-      (r) => r.value.tyre_data?.rear_left !== undefined,
-      (r) => r.value.tyre_data.rear_left
+      (r) => r.value.rear_left?.pressure !== undefined,
+      (r) => r.value.rear_left.pressure
     )
 
     const latestRearRightTyrePressure = getLatestValue(
-      (r) => r.value.tyre_data?.rear_right !== undefined,
-      (r) => r.value.tyre_data.rear_right
+      (r) => r.value.rear_right?.pressure !== undefined,
+      (r) => r.value.rear_right.pressure
     )
 
     // Combine vehicle data with latest readings
     return {
       ...vehicle,
       speed: latestSpeed,
-      temperature: latestTemperature,
+      temperature: latestEngineTemperature,
       front_left: latestFrontLeftTyrePressure,
       front_right: latestFrontRightTyrePressure,
       rear_left: latestRearLeftTyrePressure,
@@ -190,6 +190,7 @@ const MapComponent = () => {
   })
 
   // ---------------- FILTERS ----------------
+  console.log('Latest Readings:', latestReadings)
   const filteredReadings = selectedVehicleId
     ? latestReadings.filter(
         (vehicle) => String(vehicle.vehicle_id) === String(selectedVehicleId)
