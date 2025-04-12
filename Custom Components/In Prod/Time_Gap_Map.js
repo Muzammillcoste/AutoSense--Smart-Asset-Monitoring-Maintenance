@@ -1,4 +1,5 @@
-// Time_Gap_Map
+// Time_Gap_Map.js
+
 const MapComponent = () => {
   const [vehicleData, setVehicleData] = useState([])
   const [sensorReadings, setSensorReadings] = useState([])
@@ -69,20 +70,8 @@ const MapComponent = () => {
     }
   }
 
-  // Fetch vehicle and sensor data on mount
-  useEffect(() => {
-    fetchVehicleData()
-    fetchSensorData()
-  }, [sensorReadings])
-
-  // Fetch alerts when vehicleData is available
-  useEffect(() => {
-    if (vehicleData.length > 0) {
-      fetchAlertData()
-    }
-  }, [vehicleData])
-
   // ---------------- LOCATION & CENTER ----------------
+  // Build the vehicle locations object from sensorReadings
   const vehicleLocations = {}
   sensorReadings.forEach((reading) => {
     if (reading.value.latitude && reading.value.longitude) {
@@ -93,6 +82,7 @@ const MapComponent = () => {
     }
   })
 
+  // Compute average center (still available if needed elsewhere)
   const calculateAverageCenter = () => {
     const coordinates = Object.values(vehicleLocations)
     if (coordinates.length === 0) return { lat: 29.7321, lng: -95.342 }
@@ -110,7 +100,35 @@ const MapComponent = () => {
     }
   }
 
-  const averageCenter = calculateAverageCenter()
+  // Determine the initial center based on vehicle_id "1"
+  // Use a fallback default if the vehicle is not found
+  const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
+
+  const mapRef = useRef(null)
+  const onLoad = (map) => {
+    mapRef.current = map
+    map.setCenter(initialCenter)
+  }
+
+  // Optional: Once sensorReadings update, recenter if vehicle 1’s location is found.
+  useEffect(() => {
+    if (mapRef.current && vehicleLocations['1']) {
+      mapRef.current.setCenter(vehicleLocations['1'])
+    }
+  }, [sensorReadings]) // You might adjust dependency if needed
+
+  // ---------------- FETCH DATA ON MOUNT ----------------
+  useEffect(() => {
+    fetchVehicleData()
+    fetchSensorData()
+  }, [])
+
+  // Fetch alerts when vehicleData is available
+  useEffect(() => {
+    if (vehicleData.length > 0) {
+      fetchAlertData()
+    }
+  }, [vehicleData])
 
   // ---------------- LATEST READINGS ----------------
   const time_gap_mins = 15
@@ -120,7 +138,6 @@ const MapComponent = () => {
     const readings = sensorReadings.filter(
       (reading) => String(reading.vehicle_id) === String(vehicle.vehicle_id)
     )
-
     const currentTime = new Date()
 
     // Helper function to get the latest value for a specific metric
@@ -128,56 +145,50 @@ const MapComponent = () => {
       const metricReadings = readings
         .filter(metricFilter)
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-
       const latestMetricReading = metricReadings[0]
       const latestMetricTime = latestMetricReading
         ? new Date(latestMetricReading.createdAt)
         : null
       const timeDifference = latestMetricTime
-        ? (currentTime - latestMetricTime) / 1000 // Convert to seconds
+        ? (currentTime - latestMetricTime) / 1000 // seconds
         : Infinity
-
       const isStale = timeDifference > time_gap_mins * 60
 
       if (isStale || !latestMetricReading) {
-        return 0 // Stale or no reading
+        return 0
       } else {
-        return valueExtractor(latestMetricReading) // Fresh reading
+        return valueExtractor(latestMetricReading)
       }
     }
 
-    // Define filters and value extractors for each metric
-    const latestSpeed = getLatestValue(
-      (r) => r.value.speed !== undefined,
-      (r) => r.value.speed
-    )
-
+    const latestSpeed = (() => {
+      const speed = getLatestValue(
+        (r) => r.value.speed !== undefined,
+        (r) => r.value.speed
+      )
+      return speed <= 2 ? 0 : speed
+    })()
     const latestEngineTemperature = getLatestValue(
       (r) => r.value.engine_temperature !== undefined,
       (r) => r.value.engine_temperature
     )
-
     const latestFrontLeftTyrePressure = getLatestValue(
       (r) => r.value.front_left?.pressure !== undefined,
       (r) => r.value.front_left.pressure
     )
-
     const latestFrontRightTyrePressure = getLatestValue(
       (r) => r.value.front_right?.pressure !== undefined,
       (r) => r.value.front_right.pressure
     )
-
     const latestRearLeftTyrePressure = getLatestValue(
       (r) => r.value.rear_left?.pressure !== undefined,
       (r) => r.value.rear_left.pressure
     )
-
     const latestRearRightTyrePressure = getLatestValue(
       (r) => r.value.rear_right?.pressure !== undefined,
       (r) => r.value.rear_right.pressure
     )
 
-    // Combine vehicle data with latest readings
     return {
       ...vehicle,
       speed: latestSpeed,
@@ -190,7 +201,6 @@ const MapComponent = () => {
   })
 
   // ---------------- FILTERS ----------------
-  console.log('Latest Readings:', latestReadings)
   const filteredReadings = selectedVehicleId
     ? latestReadings.filter(
         (vehicle) => String(vehicle.vehicle_id) === String(selectedVehicleId)
@@ -239,8 +249,6 @@ const MapComponent = () => {
     e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)'
   }
 
-  // The container now always allows scrolling but the scrollbars are hidden by default.
-  // They become visible on hover using CSS.
   const scrollableContainerStyle = {
     maxHeight: '240px',
     border: '1px solid #e0e0e0',
@@ -294,37 +302,36 @@ const MapComponent = () => {
   // ---------------- RENDER ----------------
   return (
     <div style={pageContainerStyle}>
-      {/* CSS for showing scrollbars on hover */}
       <style>
         {`
-            @keyframes pulseCritical {
-              0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-              70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
-              100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
-            }
-            @keyframes pulseWarning {
-              0% { box-shadow: 0 0 0 0 rgba(230, 138, 0, 0.7); }
-              70% { box-shadow: 0 0 0 10px rgba(230, 138, 0, 0); }
-              100% { box-shadow: 0 0 0 0 rgba(230, 138, 0, 0); }
-            }
-            .scrollable-container {
-              overflow: auto;
-              scrollbar-width: none; /* Firefox */
-              -ms-overflow-style: none;  /* IE and Edge */
-            }
-            .scrollable-container::-webkit-scrollbar {
-              width: 0;
-              height: 0;
-              transition: all 0.3s ease;
-            }
-            .scrollable-container:hover {
-              scrollbar-width: thin;
-            }
-            .scrollable-container:hover::-webkit-scrollbar {
-              width: 8px;
-              height: 8px;
-            }
-          `}
+          @keyframes pulseCritical {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+          }
+          @keyframes pulseWarning {
+            0% { box-shadow: 0 0 0 0 rgba(230, 138, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(230, 138, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(230, 138, 0, 0); }
+          }
+          .scrollable-container {
+            overflow: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .scrollable-container::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            transition: all 0.3s ease;
+          }
+          .scrollable-container:hover {
+            scrollbar-width: thin;
+          }
+          .scrollable-container:hover::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+        `}
       </style>
       <div style={{ display: 'flex', gap: '20px' }}>
         {/* MAP SECTION */}
@@ -332,21 +339,20 @@ const MapComponent = () => {
           <LoadScript googleMapsApiKey='AIzaSyBoailEnSezAE-hZK4pruLvZTOLA91YIlQ'>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
-              center={averageCenter}
-              zoom={13}
+              onLoad={onLoad}
+              zoom={14}
               onClick={() => setSelectedVehicleId(null)}
             >
               {Object.entries(vehicleLocations).map(([vehicleId, location]) => {
                 const vehicle = latestReadings.find(
                   (v) => String(v.vehicle_id) === String(vehicleId)
                 )
-
-                // Determine the icon to use
+                // Determine the icon to use:
                 const iconKey =
                   selectedVehicleId === vehicleId
                     ? 'selected'
                     : vehicle?.status.toLowerCase()
-                const iconUrl = markerIcons[iconKey] || markerIcons.active // Fallback to 'active' if no match
+                const iconUrl = markerIcons[iconKey] || markerIcons.active
 
                 return (
                   <Marker
