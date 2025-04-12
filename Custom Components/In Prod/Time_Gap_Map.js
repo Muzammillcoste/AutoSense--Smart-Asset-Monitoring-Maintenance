@@ -110,7 +110,7 @@ const MapComponent = () => {
     }
   }
 
-  const defaultCenter = calculateAverageCenter()
+  const averageCenter = calculateAverageCenter()
 
   // ---------------- LATEST READINGS ----------------
   const time_gap_mins = 15
@@ -158,23 +158,23 @@ const MapComponent = () => {
     )
 
     const latestFrontLeftTyrePressure = getLatestValue(
-      (r) => r.value.tyre_pressure?.front_left !== undefined,
-      (r) => r.value.tyre_pressure.front_left
+      (r) => r.value.tyre_data?.front_left !== undefined,
+      (r) => r.value.tyre_data.front_left
     )
 
     const latestFrontRightTyrePressure = getLatestValue(
-      (r) => r.value.tyre_pressure?.front_right !== undefined,
-      (r) => r.value.tyre_pressure.front_right
+      (r) => r.value.tyre_data?.front_right !== undefined,
+      (r) => r.value.tyre_data.front_right
     )
 
     const latestRearLeftTyrePressure = getLatestValue(
-      (r) => r.value.tyre_pressure?.rear_left !== undefined,
-      (r) => r.value.tyre_pressure.rear_left
+      (r) => r.value.tyre_data?.rear_left !== undefined,
+      (r) => r.value.tyre_data.rear_left
     )
 
     const latestRearRightTyrePressure = getLatestValue(
-      (r) => r.value.tyre_pressure?.rear_right !== undefined,
-      (r) => r.value.tyre_pressure.rear_right
+      (r) => r.value.tyre_data?.rear_right !== undefined,
+      (r) => r.value.tyre_data.rear_right
     )
 
     // Combine vehicle data with latest readings
@@ -331,7 +331,7 @@ const MapComponent = () => {
           <LoadScript googleMapsApiKey='AIzaSyBoailEnSezAE-hZK4pruLvZTOLA91YIlQ'>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
-              center={defaultCenter}
+              center={averageCenter}
               zoom={13}
               onClick={() => setSelectedVehicleId(null)}
             >
