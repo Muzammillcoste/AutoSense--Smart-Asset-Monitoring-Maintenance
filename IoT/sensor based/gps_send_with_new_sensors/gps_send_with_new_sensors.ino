@@ -18,10 +18,12 @@ struct WiFiCred {
     const char* password;
 };
 
-const int numNetworks = 2;
+const int numNetworks = 4;
 WiFiCred wifiCreds[numNetworks] = {
     {"Sparx Ultra 11", "1234567890"},
-    {"Huzaifa", "huzaifa123567"}
+    {"Huzaifa", "huzaifa123567"},
+    {"TP-Link_F00C", "google@1234"},
+    {"realme C1", "12345678"},
 };
 
 const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=Bc4JfnH9ht5FMKxTNXQZKL_8WsSDR+";
@@ -290,16 +292,11 @@ void setup() {
 // Main Loop
 // -------------------------
 void loop() {
-    // Read GPS data continuously
-    while (gpsSerial.available() > 0) {
-        if (gps.encode(gpsSerial.read())) {
-            if (gps.location.isValid()) {
-                gps_latitude = gps.location.lat();
-                gps_longitude = gps.location.lng();
-            }
-            if (gps.speed.isValid()) {
-                gps_speed = gps.speed.kmph();
-            }
+    // Read GPS data for 1 second
+    unsigned long start = millis();
+    while (millis() - start < 1000) {
+        while (gpsSerial.available() > 0) {
+            gps.encode(gpsSerial.read());
         }
     }
 
@@ -307,7 +304,16 @@ void loop() {
     BLEScanResults* foundDevices = pBLEScan->start(1, false);
     pBLEScan->clearResults();
 
-    // Send GPS location every 5 seconds
+    // Update GPS variables if data is available
+    if (gps.location.isValid()) {
+        gps_latitude = gps.location.lat();
+        gps_longitude = gps.location.lng();
+    }
+    if (gps.speed.isValid()) {
+        gps_speed = gps.speed.kmph();
+    }
+
+    // Send GPS location and speed every 5 seconds
     if (millis() - lastGPSSendTime >= gpsSendInterval) {
         if (gps.location.isValid()) {
             DynamicJsonDocument gpsDoc(128);
@@ -319,6 +325,7 @@ void loop() {
             JsonObject value = gpsDoc.createNestedObject("value");
             value["latitude"] = round2(gps_latitude);
             value["longitude"] = round2(gps_longitude);
+            value["speed"] = round2(gps_speed);
 
             String gpsPayload;
             serializeJson(gpsDoc, gpsPayload);
@@ -409,7 +416,7 @@ void loop() {
         // --- Alert Generation ---
         vehicle_alert_count = 0;
 
-        // Tyre pressure alerts (unchanged)
+        // Tyre pressure alerts
         if (tpms_front_left > 32) {
             DynamicJsonDocument alertDoc(256);
             String alertId = "alert" + String(random(100000, 999999));
