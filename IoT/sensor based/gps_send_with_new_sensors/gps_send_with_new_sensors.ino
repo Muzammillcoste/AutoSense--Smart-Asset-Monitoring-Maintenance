@@ -435,7 +435,7 @@ void loop() {
             sendHTTPPostToUrl(alertPayload, POST_ALERT_WEBHOOK);
             vehicle_alert_count++;
         }
-        if (tpms_front_left <= 25) {
+        if (tpms_front_left > 0 && tpms_front_left <= 25) {
             DynamicJsonDocument alertDoc(256);
             String alertId = "alert" + String(random(100000, 999999));
             alertDoc["alert_id"] = alertId;
@@ -471,7 +471,7 @@ void loop() {
             sendHTTPPostToUrl(alertPayload, POST_ALERT_WEBHOOK);
             vehicle_alert_count++;
         }
-        if (tpms_front_right <= 25) {
+        if (tpms_front_right > 0 && tpms_front_right <= 25) {
             DynamicJsonDocument alertDoc(256);
             String alertId = "alert" + String(random(100000, 999999));
             alertDoc["alert_id"] = alertId;
@@ -507,7 +507,7 @@ void loop() {
             sendHTTPPostToUrl(alertPayload, POST_ALERT_WEBHOOK);
             vehicle_alert_count++;
         }
-        if (tpms_rear_left <= 25) {
+        if (tpms_rear_left > 0 && tpms_rear_left <= 25) {
             DynamicJsonDocument alertDoc(256);
             String alertId = "alert" + String(random(100000, 999999));
             alertDoc["alert_id"] = alertId;
@@ -543,7 +543,7 @@ void loop() {
             sendHTTPPostToUrl(alertPayload, POST_ALERT_WEBHOOK);
             vehicle_alert_count++;
         }
-        if (tpms_rear_right <= 25) {
+        if (tpms_rear_right > 0 && tpms_rear_right <= 25) {
             DynamicJsonDocument alertDoc(256);
             String alertId = "alert" + String(random(100000, 999999));
             alertDoc["alert_id"] = alertId;

@@ -1,4 +1,4 @@
-Temperature: 80C
+Max Temperature: 80C
 
-Tyre Pressure: 25 PSI to 32 PSI
+Tyre Pressure: low= 25 PSI to high=32 PSI
 
