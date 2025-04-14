@@ -323,8 +323,8 @@ void loop() {
             gpsDoc["vehicle_id"] = 1;
             gpsDoc["timestamp"] = getISOTimestamp();
             JsonObject value = gpsDoc.createNestedObject("value");
-            value["latitude"] = round2(gps_latitude);
-            value["longitude"] = round2(gps_longitude);
+            value["latitude"] = gps_latitude;
+            value["longitude"] = gps_longitude;
             value["speed"] = round2(gps_speed);
 
             String gpsPayload;
@@ -604,5 +604,5 @@ void loop() {
         lastSendTime = millis();
     }
 
-    delay(100);
+    // delay(100);
 }

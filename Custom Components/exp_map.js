@@ -1,3 +1,5 @@
+// exp_map.js
+
 const MapComponent = () => {
   const [vehicleData, setVehicleData] = useState([])
   const [sensorReadings, setSensorReadings] = useState([])
@@ -76,37 +78,24 @@ const MapComponent = () => {
     }
   })
 
-  // const calculateAverageCenter = () => {
-  //   const coordinates = Object.values(vehicleLocations)
-  //   if (coordinates.length === 0) return { lat: 29.7321, lng: -95.342 }
-  //   const total = coordinates.reduce(
-  //     (acc, curr) => {
-  //       acc.lat += curr.lat
-  //       acc.lng += curr.lng
-  //       return acc
-  //     },
-  //     { lat: 0, lng: 0 }
-  //   )
-  //   return {
-  //     lat: total.lat / coordinates.length,
-  //     lng: total.lng / coordinates.length
-  //   }
-  // }
-
   const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
 
-
-  // ---------------- FETCH DATA ON MOUNT ----------------
+  // ---------------- FETCH DATA ----------------
   useEffect(() => {
     fetchVehicleData()
-    fetchSensorData()
-  }, [sensorReadings])
+  }, [])
 
   useEffect(() => {
     if (vehicleData.length > 0) {
-      fetchAlertData()
+      const fetchData = () => {
+        fetchSensorData()
+        fetchAlertData()
+      }
+      fetchData() // Initial fetch
+      const interval = setInterval(fetchData, 5000) // Fetch every 5 seconds
+      return () => clearInterval(interval) // Cleanup interval on unmount
     }
-  }, [vehicleData, alertData])
+  }, [vehicleData])
 
   // ---------------- LATEST READINGS ----------------
   const time_gap_mins = 15
