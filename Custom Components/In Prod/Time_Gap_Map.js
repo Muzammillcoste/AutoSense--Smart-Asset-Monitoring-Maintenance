@@ -78,24 +78,25 @@ const MapComponent = () => {
     }
   })
 
-  // const calculateAverageCenter = () => {
-  //   const coordinates = Object.values(vehicleLocations)
-  //   if (coordinates.length === 0) return { lat: 29.7321, lng: -95.342 }
-  //   const total = coordinates.reduce(
-  //     (acc, curr) => {
-  //       acc.lat += curr.lat
-  //       acc.lng += curr.lng
-  //       return acc
-  //     },
-  //     { lat: 0, lng: 0 }
-  //   )
-  //   return {
-  //     lat: total.lat / coordinates.length,
-  //     lng: total.lng / coordinates.length
-  //   }
-  // }
+  const calculateAverageCenter = () => {
+    const coordinates = Object.values(vehicleLocations)
+    if (coordinates.length === 0) return { lat: 29.7321, lng: -95.342 }
+    const total = coordinates.reduce(
+      (acc, curr) => {
+        acc.lat += curr.lat
+        acc.lng += curr.lng
+        return acc
+      },
+      { lat: 0, lng: 0 }
+    )
+    return {
+      lat: total.lat / coordinates.length,
+      lng: total.lng / coordinates.length
+    }
+  }
 
   const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
+  const avg_center = calculateAverageCenter()
 
   // ---------------- FETCH DATA ON MOUNT ----------------
   useEffect(() => {
@@ -107,10 +108,10 @@ const MapComponent = () => {
     if (vehicleData.length > 0) {
       fetchAlertData()
     }
-  }, [vehicleData, alertData])
+  }, [vehicleData])
 
   // ---------------- LATEST READINGS ----------------
-  const time_gap_mins = 15
+  const time_gap_mins = 5
 
   const latestReadings = vehicleData.map((vehicle) => {
     const readings = sensorReadings.filter(
@@ -216,6 +217,7 @@ const MapComponent = () => {
         (vehicle) => String(vehicle.vehicle_id) === String(selectedVehicleId)
       )
     : latestReadings
+  console.log('Latest Readings', latestReadings)
 
   const filteredAlerts = selectedVehicleId
     ? alertData.filter(

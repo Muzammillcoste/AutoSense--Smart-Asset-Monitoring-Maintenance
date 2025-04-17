@@ -17,10 +17,11 @@ struct WiFiCred {
     const char* password;
 };
 
-const int numNetworks = 2; // Adjust this based on how many networks you have
+const int numNetworks = 3; // Adjust this based on how many networks you have
 WiFiCred wifiCreds[numNetworks] = {
     {"Sparx Ultra 11", "1234567890"},
-    {"Huzaifa", "huzaifa123567"}
+    {"Huzaifa", "huzaifa123567"},
+    {"TP-Link_F00C", "google@1234"},
     // Add more networks here, e.g., {"NewSSID", "NewPassword"}
 };
 

@@ -50,8 +50,8 @@ HardwareSerial gpsSerial(2);
 unsigned long reading_counter = 0;
 unsigned long lastSendTime = 0;
 unsigned long lastGPSSendTime = 0;
-const unsigned long sendInterval = 300000; // 5 minutes
-const unsigned long gpsSendInterval = 5000; // 5 seconds
+const unsigned long sendInterval = 5000; // 5 minutes
+const unsigned long gpsSendInterval = 2000; // 5 seconds
 int vehicle_alert_count = 0;
 
 // Tyre Pressure Global Variables
@@ -292,6 +292,11 @@ void setup() {
 // Main Loop
 // -------------------------
 void loop() {
+           // Request DS18B20 temperature
+        sensors.requestTemperatures();
+        Serial.println(ds18b20_temperature);
+        ds18b20_temperature = sensors.getTempCByIndex(0);
+
     // Read GPS data for 1 second
     unsigned long start = millis();
     while (millis() - start < 1000) {
@@ -345,6 +350,7 @@ void loop() {
 
         // Request DS18B20 temperature
         sensors.requestTemperatures();
+        Serial.println(ds18b20_temperature);
         ds18b20_temperature = sensors.getTempCByIndex(0);
 
         // --- Build TPMS JSON Payload ---
@@ -383,7 +389,7 @@ void loop() {
         tempDoc["vehicle_id"] = 1;
         tempDoc["timestamp"] = isoTimestamp;
         JsonObject tempValue = tempDoc.createNestedObject("value");
-        tempValue["temperature"] = round2(ds18b20_temperature);
+        tempValue["engine_temperature"] = round2(ds18b20_temperature);
 
         String tempPayload;
         serializeJson(tempDoc, tempPayload);
@@ -592,7 +598,7 @@ void loop() {
 
         if (vehicle_alert_count > 0 || vehicleStatus == "Active") {
             DynamicJsonDocument statusDoc(128);
-            statusDoc["vehicle_id"] = 1;
+            statusDoc["vehicle_id"] = "1";
             statusDoc["status"] = vehicleStatus;
             String statusPayload;
             serializeJson(statusDoc, statusPayload);
