@@ -98,16 +98,24 @@ const MapComponent = () => {
   const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
   const avg_center = calculateAverageCenter()
 
-  // ---------------- FETCH DATA ON MOUNT ----------------
-  useEffect(() => {
-    fetchVehicleData()
-    fetchSensorData()
-  }, [sensorReadings])
+  // ---------------- POLLING INTERVALS ----------------
+  const POLL_INTERVAL_MS = 2000 // 2 seconds
 
   useEffect(() => {
-    if (vehicleData.length > 0) {
-      fetchAlertData()
-    }
+    fetchVehicleData()
+  }, [])
+
+  useEffect(() => {
+    fetchSensorData()
+    const sensorInterval = setInterval(fetchSensorData, POLL_INTERVAL_MS)
+    return () => clearInterval(sensorInterval)
+  }, [])
+
+  useEffect(() => {
+    if (!vehicleData.length) return
+    fetchAlertData()
+    const alertInterval = setInterval(fetchAlertData, POLL_INTERVAL_MS)
+    return () => clearInterval(alertInterval)
   }, [vehicleData])
 
   // ---------------- LATEST READINGS ----------------

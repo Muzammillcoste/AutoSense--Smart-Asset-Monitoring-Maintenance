@@ -1,10 +1,10 @@
-// exp_map.js
-
 const MapComponent = () => {
   const [vehicleData, setVehicleData] = useState([])
   const [sensorReadings, setSensorReadings] = useState([])
   const [alertData, setAlertData] = useState([])
   const [selectedVehicleId, setSelectedVehicleId] = useState(null)
+
+  const pollingInterval = 2000 // milliseconds
 
   const vehicleWebhook =
     'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1'
@@ -24,7 +24,7 @@ const MapComponent = () => {
       'https://swift-cloud.ephlux.com/uploads/31fc3f4b-bbdd-4785-abb4-19811e249d68-car.png'
   }
 
-  // ---------------- FETCH METHODS ----------------
+  // ---------------- INITIAL FETCH VEHICLES ----------------
   const fetchVehicleData = async () => {
     try {
       const response = await axios.post(vehicleWebhook, {})
@@ -35,37 +35,68 @@ const MapComponent = () => {
     }
   }
 
-  const fetchSensorData = async () => {
-    try {
-      const response = await axios.post(sensorWebhook, {})
-      const sensors = response.data.response.obj || []
-      setSensorReadings(sensors)
-    } catch (error) {
-      console.error('Error fetching sensor data:', error)
-    }
-  }
+  useEffect(() => {
+    fetchVehicleData()
+  }, [])
 
-  const fetchAlertData = async () => {
-    try {
-      const response = await axios.post(alertsWebhook, {})
-      let alerts = response.data.actions[0].obj || []
-      alerts = alerts.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      )
-      const enrichedAlerts = alerts.map((alert) => {
-        const vehicle = vehicleData.find(
-          (v) => String(v.vehicle_id) === String(alert.vehicle_id)
-        )
-        const vehicleName = vehicle
-          ? `${vehicle.make} ${vehicle.model}`
-          : 'Unknown Vehicle'
-        return { ...alert, vehicle_name: vehicleName }
-      })
-      setAlertData(enrichedAlerts)
-    } catch (error) {
-      console.error('Error fetching alerts data:', error)
+  // ---------------- LONG POLLING SENSOR DATA ----------------
+  useEffect(() => {
+    let isMounted = true
+
+    const pollSensorData = async () => {
+      if (!isMounted) return
+      try {
+        const response = await axios.post(sensorWebhook, {})
+        const sensors = response.data.response.obj || []
+        setSensorReadings(sensors)
+      } catch (error) {
+        console.error('Error polling sensor data:', error)
+      } finally {
+        setTimeout(pollSensorData, pollingInterval)
+      }
     }
-  }
+
+    pollSensorData()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // ---------------- LONG POLLING ALERT DATA ----------------
+  useEffect(() => {
+    if (vehicleData.length === 0) return
+    let isMounted = true
+
+    const pollAlertData = async () => {
+      if (!isMounted) return
+      try {
+        const response = await axios.post(alertsWebhook, {})
+        let alerts = response.data.actions[0].obj || []
+        alerts = alerts.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        )
+        const enriched = alerts.map((alert) => {
+          const vehicle = vehicleData.find(
+            (v) => String(v.vehicle_id) === String(alert.vehicle_id)
+          )
+          const vehicleName = vehicle
+            ? `${vehicle.make} ${vehicle.model}`
+            : 'Unknown Vehicle'
+          return { ...alert, vehicle_name: vehicleName }
+        })
+        setAlertData(enriched)
+      } catch (error) {
+        console.error('Error polling alert data:', error)
+      } finally {
+        setTimeout(pollAlertData, pollingInterval)
+      }
+    }
+
+    pollAlertData()
+    return () => {
+      isMounted = false
+    }
+  }, [vehicleData])
 
   // ---------------- LOCATION & CENTER ----------------
   const vehicleLocations = {}
@@ -78,138 +109,113 @@ const MapComponent = () => {
     }
   })
 
+  const calculateAverageCenter = () => {
+    const coords = Object.values(vehicleLocations)
+    if (coords.length === 0) return { lat: 29.7321, lng: -95.342 }
+    const total = coords.reduce(
+      (acc, curr) => {
+        acc.lat += curr.lat
+        acc.lng += curr.lng
+        return acc
+      },
+      { lat: 0, lng: 0 }
+    )
+    return {
+      lat: total.lat / coords.length,
+      lng: total.lng / coords.length
+    }
+  }
+
   const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
 
-  // ---------------- FETCH DATA ----------------
-  useEffect(() => {
-    fetchVehicleData()
-  }, [])
-
-  useEffect(() => {
-    if (vehicleData.length > 0) {
-      const fetchData = () => {
-        fetchSensorData()
-        fetchAlertData()
-      }
-      fetchData() // Initial fetch
-      const interval = setInterval(fetchData, 5000) // Fetch every 5 seconds
-      return () => clearInterval(interval) // Cleanup interval on unmount
-    }
-  }, [vehicleData])
-
   // ---------------- LATEST READINGS ----------------
-  const time_gap_mins = 15
-
+  const time_gap_mins = 5
   const latestReadings = vehicleData.map((vehicle) => {
     const readings = sensorReadings.filter(
-      (reading) => String(reading.vehicle_id) === String(vehicle.vehicle_id)
+      (r) => String(r.vehicle_id) === String(vehicle.vehicle_id)
     )
-    const currentTime = new Date()
+    const now = new Date()
 
-    const getLatestValue = (metricFilter, valueExtractor) => {
-      const metricReadings = readings
-        .filter(metricFilter)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      const latestMetricReading = metricReadings[0]
-      const latestMetricTime = latestMetricReading
-        ? new Date(latestMetricReading.createdAt)
-        : null
-      const timeDifference = latestMetricTime
-        ? (currentTime - latestMetricTime) / 1000
-        : Infinity
-      const isStale = timeDifference > time_gap_mins * 60
-
-      if (isStale || !latestMetricReading) {
-        return 0
-      } else {
-        return valueExtractor(latestMetricReading)
-      }
+    const getLatestValue = (filterFn, extractFn) => {
+      const metric = readings
+        .filter(filterFn)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+      if (!metric) return 0
+      const diffSec = (now - new Date(metric.createdAt)) / 1000
+      return diffSec > time_gap_mins * 60 ? 0 : extractFn(metric)
     }
 
     const latestSpeed = (() => {
-      const speed = getLatestValue(
-        (r) => r.value.speed !== undefined,
+      const s = getLatestValue(
+        (r) => r.value.speed != null,
         (r) => r.value.speed
       )
-      return speed <= 2 ? 0 : speed
+      return s <= 2 ? 0 : s
     })()
-
-    const latestEngineTemperature = getLatestValue(
-      (r) => r.value.engine_temperature !== undefined,
-      (r) => r.value.engine_temperature
-    )
-
-    const latestFrontLeftTyrePressure = getLatestValue(
-      (r) => r.value.front_left?.pressure !== undefined,
-      (r) => r.value.front_left.pressure
-    )
-    const latestFrontLeftTyreTemperature = getLatestValue(
-      (r) => r.value.front_left?.temperature !== undefined,
-      (r) => r.value.front_left.temperature
-    )
-
-    const latestFrontRightTyrePressure = getLatestValue(
-      (r) => r.value.front_right?.pressure !== undefined,
-      (r) => r.value.front_right.pressure
-    )
-    const latestFrontRightTyreTemperature = getLatestValue(
-      (r) => r.value.front_right?.temperature !== undefined,
-      (r) => r.value.front_right.temperature
-    )
-
-    const latestRearLeftTyrePressure = getLatestValue(
-      (r) => r.value.rear_left?.pressure !== undefined,
-      (r) => r.value.rear_left.pressure
-    )
-    const latestRearLeftTyreTemperature = getLatestValue(
-      (r) => r.value.rear_left?.temperature !== undefined,
-      (r) => r.value.rear_left.temperature
-    )
-
-    const latestRearRightTyrePressure = getLatestValue(
-      (r) => r.value.rear_right?.pressure !== undefined,
-      (r) => r.value.rear_right.pressure
-    )
-    const latestRearRightTyreTemperature = getLatestValue(
-      (r) => r.value.rear_right?.temperature !== undefined,
-      (r) => r.value.rear_right.temperature
-    )
 
     return {
       ...vehicle,
       speed: latestSpeed,
-      temperature: latestEngineTemperature,
+      temperature: getLatestValue(
+        (r) => r.value.engine_temperature != null,
+        (r) => r.value.engine_temperature
+      ),
       front_left: {
-        pressure: latestFrontLeftTyrePressure,
-        temperature: latestFrontLeftTyreTemperature
+        pressure: getLatestValue(
+          (r) => r.value.front_left?.pressure != null,
+          (r) => r.value.front_left.pressure
+        ),
+        temperature: getLatestValue(
+          (r) => r.value.front_left?.temperature != null,
+          (r) => r.value.front_left.temperature
+        )
       },
       front_right: {
-        pressure: latestFrontRightTyrePressure,
-        temperature: latestFrontRightTyreTemperature
+        pressure: getLatestValue(
+          (r) => r.value.front_right?.pressure != null,
+          (r) => r.value.front_right.pressure
+        ),
+        temperature: getLatestValue(
+          (r) => r.value.front_right?.temperature != null,
+          (r) => r.value.front_right.temperature
+        )
       },
       rear_left: {
-        pressure: latestRearLeftTyrePressure,
-        temperature: latestRearLeftTyreTemperature
+        pressure: getLatestValue(
+          (r) => r.value.rear_left?.pressure != null,
+          (r) => r.value.rear_left.pressure
+        ),
+        temperature: getLatestValue(
+          (r) => r.value.rear_left?.temperature != null,
+          (r) => r.value.rear_left.temperature
+        )
       },
       rear_right: {
-        pressure: latestRearRightTyrePressure,
-        temperature: latestRearRightTyreTemperature
+        pressure: getLatestValue(
+          (r) => r.value.rear_right?.pressure != null,
+          (r) => r.value.rear_right.pressure
+        ),
+        temperature: getLatestValue(
+          (r) => r.value.rear_right?.temperature != null,
+          (r) => r.value.rear_right.temperature
+        )
       }
     }
   })
 
-  // ---------------- FILTERS ----------------
   const filteredReadings = selectedVehicleId
     ? latestReadings.filter(
-        (vehicle) => String(vehicle.vehicle_id) === String(selectedVehicleId)
+        (v) => String(v.vehicle_id) === String(selectedVehicleId)
       )
     : latestReadings
-
+  console.log('latestReadings', latestReadings)
   const filteredAlerts = selectedVehicleId
     ? alertData.filter(
-        (alert) => String(alert.vehicle_id) === String(selectedVehicleId)
+        (a) => String(a.vehicle_id) === String(selectedVehicleId)
       )
     : alertData
+
+  // ---------------- STYLING & RENDER ----------------
 
   // ---------------- STYLING ----------------
   const pageContainerStyle = {
@@ -297,40 +303,8 @@ const MapComponent = () => {
     warning: '#E68A00'
   }
 
-  // ---------------- RENDER ----------------
   return (
     <div style={pageContainerStyle}>
-      <style>
-        {`
-          @keyframes pulseCritical {
-            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
-          }
-          @keyframes pulseWarning {
-            0% { box-shadow: 0 0 0 0 rgba(230, 138, 0, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(230, 138, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(230, 138, 0, 0); }
-          }
-          .scrollable-container {
-            overflow: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-          }
-          .scrollable-container::-webkit-scrollbar {
-            width: 0;
-            height: 0;
-            transition: all 0.3s ease;
-          }
-          .scrollable-container:hover {
-            scrollbar-width: thin;
-          }
-          .scrollable-container:hover::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-          }
-        `}
-      </style>
       <div style={{ display: 'flex', gap: '20px' }}>
         <div style={{ flex: 2 }}>
           <LoadScript googleMapsApiKey='AIzaSyBoailEnSezAE-hZK4pruLvZTOLA91YIlQ'>
@@ -340,25 +314,24 @@ const MapComponent = () => {
               zoom={14}
               onClick={() => setSelectedVehicleId(null)}
             >
-              {Object.entries(vehicleLocations).map(([vehicleId, location]) => {
-                const vehicle = latestReadings.find(
-                  (v) => String(v.vehicle_id) === String(vehicleId)
+              {Object.entries(vehicleLocations).map(([id, loc]) => {
+                const veh = latestReadings.find(
+                  (v) => String(v.vehicle_id) === id
                 )
-                const iconKey =
-                  selectedVehicleId === vehicleId
+                const key =
+                  selectedVehicleId === id
                     ? 'selected'
-                    : vehicle?.status.toLowerCase()
-                const iconUrl = markerIcons[iconKey] || markerIcons.active
-
+                    : veh?.status.toLowerCase()
+                const icon = markerIcons[key] || markerIcons.active
                 return (
                   <Marker
-                    key={vehicleId}
-                    position={location}
+                    key={id}
+                    position={loc}
                     icon={{
-                      url: iconUrl,
+                      url: icon,
                       scaledSize: new window.google.maps.Size(55, 55)
                     }}
-                    onClick={() => setSelectedVehicleId(vehicleId)}
+                    onClick={() => setSelectedVehicleId(id)}
                   />
                 )
               })}

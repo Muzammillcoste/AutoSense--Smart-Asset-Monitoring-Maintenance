@@ -18,11 +18,12 @@ struct WiFiCred {
     const char* password;
 };
 
-const int numNetworks = 4;
+const int numNetworks = 5;
 WiFiCred wifiCreds[numNetworks] = {
     {"Sparx Ultra 11", "1234567890"},
     {"Huzaifa", "huzaifa123567"},
     {"TP-Link_F00C", "google@1234"},
+    {"dcode", "umer1234"},
     {"realme C1", "12345678"},
 };
 
@@ -50,8 +51,8 @@ HardwareSerial gpsSerial(2);
 unsigned long reading_counter = 0;
 unsigned long lastSendTime = 0;
 unsigned long lastGPSSendTime = 0;
-const unsigned long sendInterval = 5000; // 5 minutes
-const unsigned long gpsSendInterval = 2000; // 5 seconds
+const unsigned long sendInterval = 5000; // 5 seconds
+const unsigned long gpsSendInterval = 2000; // 2 seconds
 int vehicle_alert_count = 0;
 
 // Tyre Pressure Global Variables
