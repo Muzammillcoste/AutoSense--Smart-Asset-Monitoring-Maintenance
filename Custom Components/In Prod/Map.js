@@ -1,4 +1,5 @@
-// Map.js
+// Time_Gap_Map.js
+
 const MapComponent = () => {
   const [vehicleData, setVehicleData] = useState([])
   const [sensorReadings, setSensorReadings] = useState([])
@@ -44,22 +45,19 @@ const MapComponent = () => {
     }
   }
 
-  // Fetch and sort alert data
   const fetchAlertData = async () => {
     try {
       const response = await axios.post(alertsWebhook, {})
       let alerts = response.data.actions[0].obj || []
-      // Sort alerts by createdAt in descending order (latest first)
       alerts = alerts.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       )
-      // Enrich alerts with vehicle names
       const enrichedAlerts = alerts.map((alert) => {
         const vehicle = vehicleData.find(
           (v) => String(v.vehicle_id) === String(alert.vehicle_id)
         )
         const vehicleName = vehicle
-          ? `${vehicle.make} ${vehicle.model}`
+          ? ${vehicle.make} ${vehicle.model}
           : 'Unknown Vehicle'
         return { ...alert, vehicle_name: vehicleName }
       })
@@ -68,19 +66,6 @@ const MapComponent = () => {
       console.error('Error fetching alerts data:', error)
     }
   }
-
-  // Fetch vehicle and sensor data on mount
-  useEffect(() => {
-    fetchVehicleData()
-    fetchSensorData()
-  }, [sensorReadings])
-
-  // Fetch alerts when vehicleData is available
-  useEffect(() => {
-    if (vehicleData.length > 0) {
-      fetchAlertData()
-    }
-  }, [vehicleData])
 
   // ---------------- LOCATION & CENTER ----------------
   const vehicleLocations = {}
@@ -110,63 +95,120 @@ const MapComponent = () => {
     }
   }
 
-  const defaultCenter = calculateAverageCenter()
+  const initialCenter = vehicleLocations['1'] || { lat: 29.7321, lng: -95.342 }
+  const avg_center = calculateAverageCenter()
+
+  // ---------------- FETCH DATA ON MOUNT ----------------
+  useEffect(() => {
+    fetchVehicleData()
+    fetchSensorData()
+  }, [sensorReadings])
+
+  useEffect(() => {
+    if (vehicleData.length > 0) {
+      fetchAlertData()
+    }
+  }, [vehicleData])
 
   // ---------------- LATEST READINGS ----------------
+  const time_gap_mins = 5
+
   const latestReadings = vehicleData.map((vehicle) => {
-    const readings = sensorReadings
-      .filter(
-        (reading) => String(reading.vehicle_id) === String(vehicle.vehicle_id)
-      )
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    const readings = sensorReadings.filter(
+      (reading) => String(reading.vehicle_id) === String(vehicle.vehicle_id)
+    )
+    const currentTime = new Date()
 
-    const latestSpeed =
-      readings.find((r) => r.value.speed !== undefined)?.value.speed || 0
+    const getLatestValue = (metricFilter, valueExtractor) => {
+      const metricReadings = readings
+        .filter(metricFilter)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      const latestMetricReading = metricReadings[0]
+      const latestMetricTime = latestMetricReading
+        ? new Date(latestMetricReading.createdAt)
+        : null
+      const timeDifference = latestMetricTime
+        ? (currentTime - latestMetricTime) / 1000
+        : Infinity
+      const isStale = timeDifference > time_gap_mins * 60
 
-    // Add latest temperature, defaulting to null if not found
-    const latestTemperature =
-      readings.find((r) => r.value.temperature !== undefined)?.value
-        .temperature || null
-
-    const latestFrontLeftTyrePressure =
-      readings.find(
-        (r) =>
-          r.value.tyre_pressure &&
-          r.value.tyre_pressure.front_left !== undefined
-      )?.value.tyre_pressure.front_left || 0
-
-    const latestFrontRightTyrePressure =
-      readings.find(
-        (r) =>
-          r.value.tyre_pressure &&
-          r.value.tyre_pressure.front_right !== undefined
-      )?.value.tyre_pressure.front_right || 0
-
-    const latestRearLeftTyrePressure =
-      readings.find(
-        (r) =>
-          r.value.tyre_pressure && r.value.tyre_pressure.rear_left !== undefined
-      )?.value.tyre_pressure.rear_left || 0
-
-    const latestRearRightTyrePressure =
-      readings.find(
-        (r) =>
-          r.value.tyre_pressure &&
-          r.value.tyre_pressure.rear_right !== undefined
-      )?.value.tyre_pressure.rear_right || 0
-
-    const latest = {
-      ...vehicle,
-      speed: latestSpeed,
-      temperature: latestTemperature, // Include temperature in the latest object
-      front_left: latestFrontLeftTyrePressure,
-      front_right: latestFrontRightTyrePressure,
-      rear_left: latestRearLeftTyrePressure,
-      rear_right: latestRearRightTyrePressure
+      if (isStale || !latestMetricReading) {
+        return 0
+      } else {
+        return valueExtractor(latestMetricReading)
+      }
     }
 
-    console.log('Latest Readings:', latest)
-    return latest
+    const latestSpeed = (() => {
+      const speed = getLatestValue(
+        (r) => r.value.speed !== undefined,
+        (r) => r.value.speed
+      )
+      return speed <= 2 ? 0 : speed
+    })()
+
+    const latestEngineTemperature = getLatestValue(
+      (r) => r.value.engine_temperature !== undefined,
+      (r) => r.value.engine_temperature
+    )
+
+    const latestFrontLeftTyrePressure = getLatestValue(
+      (r) => r.value.front_left?.pressure !== undefined,
+      (r) => r.value.front_left.pressure
+    )
+    const latestFrontLeftTyreTemperature = getLatestValue(
+      (r) => r.value.front_left?.temperature !== undefined,
+      (r) => r.value.front_left.temperature
+    )
+
+    const latestFrontRightTyrePressure = getLatestValue(
+      (r) => r.value.front_right?.pressure !== undefined,
+      (r) => r.value.front_right.pressure
+    )
+    const latestFrontRightTyreTemperature = getLatestValue(
+      (r) => r.value.front_right?.temperature !== undefined,
+      (r) => r.value.front_right.temperature
+    )
+
+    const latestRearLeftTyrePressure = getLatestValue(
+      (r) => r.value.rear_left?.pressure !== undefined,
+      (r) => r.value.rear_left.pressure
+    )
+    const latestRearLeftTyreTemperature = getLatestValue(
+      (r) => r.value.rear_left?.temperature !== undefined,
+      (r) => r.value.rear_left.temperature
+    )
+
+    const latestRearRightTyrePressure = getLatestValue(
+      (r) => r.value.rear_right?.pressure !== undefined,
+      (r) => r.value.rear_right.pressure
+    )
+    const latestRearRightTyreTemperature = getLatestValue(
+      (r) => r.value.rear_right?.temperature !== undefined,
+      (r) => r.value.rear_right.temperature
+    )
+
+    return {
+      ...vehicle,
+      speed: latestSpeed,
+      temperature: latestEngineTemperature,
+      front_left: {
+        pressure: latestFrontLeftTyrePressure,
+        temperature: latestFrontLeftTyreTemperature
+      },
+      front_right: {
+        pressure: latestFrontRightTyrePressure,
+        temperature: latestFrontRightTyreTemperature
+      },
+      rear_left: {
+        pressure: latestRearLeftTyrePressure,
+        temperature: latestRearLeftTyreTemperature
+      },
+      rear_right: {
+        pressure: latestRearRightTyrePressure,
+        temperature: latestRearRightTyreTemperature
+      }
+    }
   })
 
   // ---------------- FILTERS ----------------
@@ -175,6 +217,7 @@ const MapComponent = () => {
         (vehicle) => String(vehicle.vehicle_id) === String(selectedVehicleId)
       )
     : latestReadings
+  console.log('Latest Readings', latestReadings)
 
   const filteredAlerts = selectedVehicleId
     ? alertData.filter(
@@ -218,8 +261,6 @@ const MapComponent = () => {
     e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)'
   }
 
-  // The container now always allows scrolling but the scrollbars are hidden by default.
-  // They become visible on hover using CSS.
   const scrollableContainerStyle = {
     maxHeight: '240px',
     border: '1px solid #e0e0e0',
@@ -273,9 +314,8 @@ const MapComponent = () => {
   // ---------------- RENDER ----------------
   return (
     <div style={pageContainerStyle}>
-      {/* CSS for showing scrollbars on hover */}
       <style>
-        {`
+        {
           @keyframes pulseCritical {
             0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
@@ -288,8 +328,8 @@ const MapComponent = () => {
           }
           .scrollable-container {
             overflow: auto;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
           }
           .scrollable-container::-webkit-scrollbar {
             width: 0;
@@ -303,29 +343,26 @@ const MapComponent = () => {
             width: 8px;
             height: 8px;
           }
-        `}
+        }
       </style>
       <div style={{ display: 'flex', gap: '20px' }}>
-        {/* MAP SECTION */}
         <div style={{ flex: 2 }}>
           <LoadScript googleMapsApiKey='AIzaSyBoailEnSezAE-hZK4pruLvZTOLA91YIlQ'>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
-              center={defaultCenter}
-              zoom={13}
+              center={initialCenter}
+              zoom={14}
               onClick={() => setSelectedVehicleId(null)}
             >
               {Object.entries(vehicleLocations).map(([vehicleId, location]) => {
                 const vehicle = latestReadings.find(
                   (v) => String(v.vehicle_id) === String(vehicleId)
                 )
-
-                // Determine the icon to use
                 const iconKey =
                   selectedVehicleId === vehicleId
                     ? 'selected'
                     : vehicle?.status.toLowerCase()
-                const iconUrl = markerIcons[iconKey] || markerIcons.active // Fallback to 'active' if no match
+                const iconUrl = markerIcons[iconKey] || markerIcons.active
 
                 return (
                   <Marker
@@ -342,10 +379,7 @@ const MapComponent = () => {
             </GoogleMap>
           </LoadScript>
         </div>
-
-        {/* VEHICLES & ALERTS */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Vehicles Card */}
           <div
             style={cardStyle}
             onMouseEnter={cardHover}
@@ -366,11 +400,11 @@ const MapComponent = () => {
                     <th style={tableHeaderStyle}>Name</th>
                     <th style={tableHeaderStyle}>Status</th>
                     <th style={tableHeaderStyle}>Speed (km/h)</th>
-                    <th style={tableHeaderStyle}>Engine Temperature (C)</th>
-                    <th style={tableHeaderStyle}>Front Left Tyre (PSI)</th>
-                    <th style={tableHeaderStyle}>Front Right Tyre (PSI)</th>
-                    <th style={tableHeaderStyle}>Rear Left Tyre (PSI)</th>
-                    <th style={tableHeaderStyle}>Rear Right Tyre (PSI)</th>
+                    <th style={tableHeaderStyle}>Engine Temperature (°C)</th>
+                    <th style={tableHeaderStyle}>Front Left Tyre (PSI, °C)</th>
+                    <th style={tableHeaderStyle}>Front Right Tyre (PSI, °C)</th>
+                    <th style={tableHeaderStyle}>Rear Left Tyre (PSI, °C)</th>
+                    <th style={tableHeaderStyle}>Rear Right Tyre (PSI, °C)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -407,21 +441,23 @@ const MapComponent = () => {
                       </td>
                       <td style={tableCellStyle}>{vehicle.speed.toFixed(2)}</td>
                       <td style={tableCellStyle}>
-                        {vehicle.temperature !== null
-                          ? vehicle.temperature.toFixed(2)
-                          : 'N/A'}
+                        {vehicle.temperature.toFixed(2)}
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.front_left.toFixed(2)}
+                        {vehicle.front_left.pressure.toFixed(1)} (
+                        {Math.round(vehicle.front_left.temperature)} °C)
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.front_right.toFixed(2)}
+                        {vehicle.front_right.pressure.toFixed(1)} (
+                        {Math.round(vehicle.front_right.temperature)} °C)
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.rear_left.toFixed(2)}
+                        {vehicle.rear_left.pressure.toFixed(1)} (
+                        {Math.round(vehicle.rear_left.temperature)} °C)
                       </td>
                       <td style={tableCellStyle}>
-                        {vehicle.rear_right.toFixed(2)}
+                        {vehicle.rear_right.pressure.toFixed(1)} (
+                        {Math.round(vehicle.rear_right.temperature)} °C)
                       </td>
                     </tr>
                   ))}
@@ -429,8 +465,6 @@ const MapComponent = () => {
               </table>
             </div>
           </div>
-
-          {/* Alerts Card */}
           <div
             style={cardStyle}
             onMouseEnter={cardHover}
