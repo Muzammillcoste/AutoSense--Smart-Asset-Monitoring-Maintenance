@@ -293,10 +293,6 @@ void setup() {
 // Main Loop
 // -------------------------
 void loop() {
-           // Request DS18B20 temperature
-        sensors.requestTemperatures();
-        Serial.println(ds18b20_temperature);
-        ds18b20_temperature = sensors.getTempCByIndex(0);
 
     // Read GPS data for 1 second
     unsigned long start = millis();
@@ -319,7 +315,7 @@ void loop() {
         gps_speed = gps.speed.kmph();
     }
 
-    // Send GPS location and speed every 5 seconds
+    // Send GPS location and speed every 2 seconds
     if (millis() - lastGPSSendTime >= gpsSendInterval) {
         if (gps.location.isValid()) {
             DynamicJsonDocument gpsDoc(128);
@@ -395,26 +391,26 @@ void loop() {
         String tempPayload;
         serializeJson(tempDoc, tempPayload);
 
-        // --- Build GPS Speed JSON Payload ---
-        DynamicJsonDocument gpsSpeedDoc(128);
-        String gpsSpeedReadingId = "gps_speed" + String(random(100000, 999999));
-        gpsSpeedDoc["reading_id"] = gpsSpeedReadingId;
-        gpsSpeedDoc["sensor_id"] = 101;
-        gpsSpeedDoc["vehicle_id"] = 1;
-        gpsSpeedDoc["timestamp"] = isoTimestamp;
-        JsonObject gpsSpeedValue = gpsSpeedDoc.createNestedObject("value");
-        gpsSpeedValue["speed"] = round2(gps_speed);
+        // // --- Build GPS Speed JSON Payload ---
+        // DynamicJsonDocument gpsSpeedDoc(128);
+        // String gpsSpeedReadingId = "gps_speed" + String(random(100000, 999999));
+        // gpsSpeedDoc["reading_id"] = gpsSpeedReadingId;
+        // gpsSpeedDoc["sensor_id"] = 101;
+        // gpsSpeedDoc["vehicle_id"] = 1;
+        // gpsSpeedDoc["timestamp"] = isoTimestamp;
+        // JsonObject gpsSpeedValue = gpsSpeedDoc.createNestedObject("value");
+        // gpsSpeedValue["speed"] = round2(gps_speed);
 
-        String gpsSpeedPayload;
-        serializeJson(gpsSpeedDoc, gpsSpeedPayload);
+        // String gpsSpeedPayload;
+        // serializeJson(gpsSpeedDoc, gpsSpeedPayload);
 
         // Print and send payloads
         Serial.println("Sending TPMS JSON Payload:");
         Serial.println(tpmsPayload);
         Serial.println("Sending Temperature JSON Payload:");
         Serial.println(tempPayload);
-        Serial.println("Sending GPS Speed JSON Payload:");
-        Serial.println(gpsSpeedPayload);
+        // Serial.println("Sending GPS Speed JSON Payload:");
+        // Serial.println(gpsSpeedPayload);
 
         sendHTTPPost(tpmsPayload);
         sendHTTPPost(tempPayload);
@@ -597,7 +593,7 @@ void loop() {
             vehicleStatus = "Active";
         }
 
-        if (vehicle_alert_count > 0 || vehicleStatus == "Active") {
+        if (vehicle_alert_count > 0 && vehicleStatus == "Active") {
             DynamicJsonDocument statusDoc(128);
             statusDoc["vehicle_id"] = "1";
             statusDoc["status"] = vehicleStatus;

@@ -42,11 +42,11 @@ const vehicles = [
 
 // Distinct starting points for vehicles in Houston
 const initialVehicleLocations = [
-  { lat: 29.7604, lng: -95.3698 },
-  { lat: 29.7499, lng: -95.3584 },
-  { lat: 29.7321, lng: -95.342 },
-  { lat: 29.7602, lng: -95.4025 },
-  { lat: 29.7188, lng: -95.426 }
+  { lat: 24.93, lng: 67.1453 },
+  { lat: 24.931, lng: 67.1383 },
+  { lat: 24.9402, lng: 67.1053 },
+  { lat: 24.9203, lng: 67.1113 },
+  { lat: 24.9104, lng: 67.1253 }
 ]
 
 // Initialize vehicle positions
