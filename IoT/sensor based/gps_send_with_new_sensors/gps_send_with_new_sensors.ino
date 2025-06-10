@@ -392,17 +392,17 @@ void loop() {
         serializeJson(tempDoc, tempPayload);
 
         // // --- Build GPS Speed JSON Payload ---
-        // DynamicJsonDocument gpsSpeedDoc(128);
-        // String gpsSpeedReadingId = "gps_speed" + String(random(100000, 999999));
-        // gpsSpeedDoc["reading_id"] = gpsSpeedReadingId;
-        // gpsSpeedDoc["sensor_id"] = 101;
-        // gpsSpeedDoc["vehicle_id"] = 1;
-        // gpsSpeedDoc["timestamp"] = isoTimestamp;
-        // JsonObject gpsSpeedValue = gpsSpeedDoc.createNestedObject("value");
-        // gpsSpeedValue["speed"] = round2(gps_speed);
+        DynamicJsonDocument gpsSpeedDoc(128);
+        String gpsSpeedReadingId = "gps_speed" + String(random(100000, 999999));
+        gpsSpeedDoc["reading_id"] = gpsSpeedReadingId;
+        gpsSpeedDoc["sensor_id"] = 101;
+        gpsSpeedDoc["vehicle_id"] = 1;
+        gpsSpeedDoc["timestamp"] = isoTimestamp;
+        JsonObject gpsSpeedValue = gpsSpeedDoc.createNestedObject("value");
+        gpsSpeedValue["speed"] = round2(gps_speed);
 
-        // String gpsSpeedPayload;
-        // serializeJson(gpsSpeedDoc, gpsSpeedPayload);
+        String gpsSpeedPayload;
+        serializeJson(gpsSpeedDoc, gpsSpeedPayload);
 
         // Print and send payloads
         Serial.println("Sending TPMS JSON Payload:");
