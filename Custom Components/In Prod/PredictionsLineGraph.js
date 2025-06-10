@@ -1,3 +1,5 @@
+// PredictionsLineGraph.js
+
 const TyreEnginePredictionChart = () => {
   const [allVehiclesData, setAllVehiclesData] = useState([])
   const [vehicleMetadata, setVehicleMetadata] = useState([])
@@ -366,4 +368,4 @@ const TyreEnginePredictionChart = () => {
 }
 
 // Render component
-render(<TyreEnginePredictionChart />)
+render(<TyreEnginePredictionChart />, document.getElementById('root'))

@@ -1,4 +1,4 @@
-// Time_Gap_Map.js
+// MapComponent.js
 
 const MapComponent = () => {
   const [vehicleData, setVehicleData] = useState([])

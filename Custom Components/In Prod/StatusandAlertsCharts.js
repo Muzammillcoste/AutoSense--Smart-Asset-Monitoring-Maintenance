@@ -1,3 +1,5 @@
+// StatusandAlertsCharts.js
+
 const VehicleAndAlertDisplay = () => {
   const [vehicleData, setVehicleData] = useState([])
   const [alertData, setAlertData] = useState([])
@@ -277,4 +279,4 @@ const VehicleAndAlertDisplay = () => {
   )
 }
 
-render(<VehicleAndAlertDisplay />)
+render(<VehicleAndAlertDisplay />, document.getElementById('root'))
