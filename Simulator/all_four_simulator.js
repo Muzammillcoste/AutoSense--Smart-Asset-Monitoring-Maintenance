@@ -339,5 +339,5 @@ function simulateSensorReadings() {
 }
 
 // ### Run the Simulation
-setInterval(simulateSensorReadings, 5000)
+setInterval(simulateSensorReadings, 3000)
 console.log('Sensor simulator is running...')
