@@ -1,0 +1,10 @@
+﻿Designator,Footprint,Quantity,Value,LCSC Part #
+J1,PinSocket_1x04_P2.54mm_Vertical,1,NEO 6M GPS,
+J2,"TerminalBlock_Phoenix_MKDS-1,5-3-5.08_1x03_P5.08mm_Horizontal",1,DS18B20,
+J3,"TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",1,FUEL SEN,
+J4,PinSocket_1x07_P2.54mm_Horizontal,1,MCP2515 MODULE,
+"J5, J6, J7","TerminalBlock_Phoenix_MKDS-1,5-8-5.08_1x08_P5.08mm_Horizontal",3,Conn_01x08_Pin,
+J8,"TerminalBlock_Phoenix_MKDS-1,5-4-5.08_1x04_P5.08mm_Horizontal",1,CONN,
+J9,"TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",1,POWER,
+R1,R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,100R,
+U1,XCVR_ESP32-S3-DEVKITC-1-N8R2,1,ESP32-S3-DEVKITC-1-N8R2,
