@@ -19,3 +19,21 @@
 - Performed the training-engine-only near-constant filter and Spearman ranking;
   the selected channels are `sensor_9`, `sensor_11`, `sensor_14`, and
   `sensor_12`.  No validation/test engine influenced either decision.
+
+## AutoSense multi-seed, threshold, and uncertainty checkpoint
+
+- Completed the pre-declared five Bi-LSTM initialization seeds (`11`, `21`,
+  `42`, `84`, `168`) for each of the three AutoSense datasets in the documented
+  Kaggle GPU environment. The imported archive was checked for all 15 unique
+  dataset/seed rows, matching script/protocol/architecture hashes, fixed split
+  metadata, and summary-statistic consistency.
+- The five-seed summaries are persisted in `multiseed_bilstm_metrics.csv` and
+  `multiseed_summary.csv`; they report variation rather than selecting a seed.
+- Completed training-derived proxy threshold-event evaluation. These outputs
+  are explicitly not engineering safety thresholds or component-failure labels.
+- Completed the pre-registered 2,000-replication, seed-42 moving-block
+  bootstrap comparisons. The best corrected baseline versus Bi-LSTM interval
+  excludes zero for every AutoSense dataset; this is an interval result, not a
+  claim based on an i.i.d. significance test.
+- Stopping at this review checkpoint before neural ablations and C-MAPSS
+  training, as instructed.

@@ -1,0 +1,52 @@
+{
+  "description": "Training-derived proxy maintenance/anomaly thresholds; not engineering safety thresholds.",
+  "threshold_source": "only raw fitting-region target values, never validation or test values",
+  "datasets": {
+    "engine_temperature": {
+      "unit": "\u00b0C",
+      "rule": "upper_only",
+      "thresholds": {
+        "upper_95th_percentile": 107.8
+      },
+      "fitting_rows": [
+        0,
+        5956
+      ],
+      "data_sha256": "d6528d327f13978592bff712684343087a99942694d99f81ebda7ff28978581e",
+      "test_origins": 1730,
+      "horizon_steps": 24,
+      "sampling_interval_hours": 1.0
+    },
+    "tyre_pressure": {
+      "unit": "PSI",
+      "rule": "two_sided",
+      "thresholds": {
+        "lower_5th_percentile": 28.97403647815323,
+        "upper_95th_percentile": 34.871037912269806
+      },
+      "fitting_rows": [
+        0,
+        1985
+      ],
+      "data_sha256": "63270ee9d3211afc3b6c6fcca798b89c4303721caa6924c34e44d112d45688f3",
+      "test_origins": 578,
+      "horizon_steps": 8,
+      "sampling_interval_hours": 3.0
+    },
+    "tyre_temperature": {
+      "unit": "\u00b0C",
+      "rule": "upper_only",
+      "thresholds": {
+        "upper_95th_percentile": 40.133542677237116
+      },
+      "fitting_rows": [
+        0,
+        1985
+      ],
+      "data_sha256": "451301b1fef1c683e844bffdec67cc93c607836b42ce1a344219b7b080379c3a",
+      "test_origins": 578,
+      "horizon_steps": 8,
+      "sampling_interval_hours": 3.0
+    }
+  }
+}
