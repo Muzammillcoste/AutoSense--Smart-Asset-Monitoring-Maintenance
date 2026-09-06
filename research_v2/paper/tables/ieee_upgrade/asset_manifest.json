@@ -1,0 +1,8 @@
+{
+  "multiseed_summary.csv": "d4439d7be311c95af491035721a16dd94401b1a486188d2c730385b582204462",
+  "architecture_ablation.csv": "a19444311bf672fc56807e24d1f9329c573f1eadf4e7189814e3cd5a411c473b",
+  "feature_ablation.csv": "eb1e7083521d01764cc14e4cc42d938a61739ba05864eb0a5fe78077397a81f6",
+  "threshold_event_metrics.csv": "c2ffa20e4d242f12e1422eb76057b92ca9ae3e78ccd388da0b1b9dfacb457b1d",
+  "cmapss_fd001_metrics.csv": "695f2368e134f9de74e67950fddb1315dd785bb239b80c18806780850a00d20b",
+  "cmapss_stage_metrics.csv": "f985eaf73af16d421685ad867e128dab663f64f02a6d7c499974414161711850"
+}

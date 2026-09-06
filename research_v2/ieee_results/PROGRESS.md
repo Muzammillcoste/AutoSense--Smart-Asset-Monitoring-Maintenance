@@ -37,3 +37,20 @@
   claim based on an i.i.d. significance test.
 - Stopping at this review checkpoint before neural ablations and C-MAPSS
   training, as instructed.
+
+## Final accepted-evidence integration
+
+- Accepted the committed C-MAPSS forecasting, C-MAPSS stage-analysis, and
+  feature-ablation archives as structurally valid results with documented
+  environment deviations, by explicit user decision; no experiment was rerun.
+- Preserved the original pinned-environment audit and added the separate
+  `accepted_integration_validation.json` ledger. The self-contained validator
+  rechecks archive hashes, keys, settings, C-MAPSS split isolation, 44
+  prediction-engine IDs, and byte-for-byte copies of the imported artifacts.
+- Imported C-MAPSS forecast/horizon/summary CSVs, the 44 prediction NPZs,
+  stage and feature CSVs, and their Kaggle manifests into `ieee_results/`.
+- Generated result-derived IEEE tables and grayscale-safe figures, expanded
+  related work with verified sources, and updated the manuscript to state the
+  heterogeneous environments and all accepted evidence.
+- Tectonic compilation was attempted but could not download its missing TeX
+  bundle because DNS resolution failed; no local TeX engine is installed.

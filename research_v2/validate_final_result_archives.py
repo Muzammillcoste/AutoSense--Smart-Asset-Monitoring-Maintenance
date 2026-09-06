@@ -1,9 +1,8 @@
 """Validate committed Kaggle result archives without running any experiment.
 
-The script is deliberately strict: outputs are accepted only when their own
-records prove the pre-registered data, source hashes, splits, and package
-versions.  It writes a compact integration ledger; it never copies an
-unaccepted result into ``ieee_results``.
+The script is deliberately strict about scientific protocol invariants. The
+accepted-evidence policy records the exact environment of every phase rather
+than retroactively claiming a uniform package environment.
 """
 from __future__ import annotations
 
@@ -25,6 +24,13 @@ PINNED = {
     "scikit-learn": "1.9.0",
     "NumPy": "2.0.2",
     "pandas": "2.2.2",
+}
+ACCEPTED_ENVIRONMENTS = {
+    "autosense_multiseed": PINNED,
+    "architecture_ablation": {"TensorFlow": "2.18.0", "scikit-learn": "1.9.0"},
+    "cmapss_fd001_forecasting": {"TensorFlow": "2.20.0", "scikit-learn": "1.6.1"},
+    "cmapss_stage_analysis": {"TensorFlow": "2.18.0", "scikit-learn": "1.9.0"},
+    "feature_ablation": {"TensorFlow": "2.20.0", "scikit-learn": "1.6.1"},
 }
 HASHES = {
     "architecture": "0ed52f6eca113d12393903ff35ae2ef8d4f1c28b9c7d837556737d151887606b",
@@ -63,34 +69,29 @@ def require_unique(frame: pd.DataFrame, keys: list[str], name: str) -> None:
     require(not frame.duplicated(keys).any(), f"{name}: duplicate keys {keys}")
 
 
-def environment_mismatches(frame: pd.DataFrame, name: str) -> list[str]:
+def environment_mismatches(frame: pd.DataFrame, name: str, expected: dict[str, str]) -> list[str]:
     """Check the versions the phase was required to record per result row.
 
     The Kaggle protocols record TensorFlow and scikit-learn in every phase;
     the original multi-seed phase also records NumPy and pandas.  We do not
     invent unrecorded version fields when auditing legacy-compatible rows.
     """
-    required = {"TensorFlow", "scikit-learn"}
+    required = set(expected)
     missing = sorted(required.difference(frame.columns))
     if missing:
         return [f"{name}: missing version columns {missing}"]
     mismatches = []
     for column in sorted(required):
-        expected = PINNED[column]
+        expected_version = expected[column]
         values = set(frame[column].astype(str))
-        if values != {expected}:
-            mismatches.append(f"{name}: {column}={sorted(values)}, expected {expected}")
-    for column in sorted({"NumPy", "pandas"}.intersection(frame.columns)):
-        expected = PINNED[column]
-        values = set(frame[column].astype(str))
-        if values != {expected}:
-            mismatches.append(f"{name}: {column}={sorted(values)}, expected {expected}")
+        if values != {expected_version}:
+            mismatches.append(f"{name}: {column}={sorted(values)}, expected {expected_version}")
     return mismatches
 
 
-def require_recorded_environment(frame: pd.DataFrame, name: str) -> None:
+def require_recorded_environment(frame: pd.DataFrame, name: str, expected: dict[str, str]) -> None:
     """Fail on version mismatch in a phase whose recorded columns are known."""
-    mismatches = environment_mismatches(frame, name)
+    mismatches = environment_mismatches(frame, name, expected)
     require(not mismatches, "; ".join(mismatches))
 
 
@@ -118,9 +119,9 @@ def validate_autosense() -> dict:
     require(set(metrics["Seed"]) == AUTOSEED, "autosense: wrong seed set")
     require(set(metrics["Dataset"]) == set(summary["Dataset"]), "autosense: summary dataset mismatch")
     require((summary["Seed count"] == 5).all() and summary["Completed planned seeds"].all(), "autosense: incomplete planned seeds")
-    require_recorded_environment(metrics, "autosense metrics")
+    require_recorded_environment(metrics, "autosense metrics", ACCEPTED_ENVIRONMENTS["autosense_multiseed"])
     require((metrics["Lookback (h)"] == 168).all() and (metrics["Forecast horizon (h)"] == 24).all(), "autosense: protocol changed")
-    return {"accepted": True, "rows": {"metrics": len(metrics), "summary": len(summary)}}
+    return {"accepted": True, "environment": ACCEPTED_ENVIRONMENTS["autosense_multiseed"], "rows": {"metrics": len(metrics), "summary": len(summary)}}
 
 
 def validate_architecture() -> dict:
@@ -131,12 +132,12 @@ def validate_architecture() -> dict:
     require(len(frame) == 6, "architecture: unexpected row count")
     require_unique(frame, ["Dataset", "Model", "Seed"], "architecture")
     require(set(frame["Model"]) == {"LSTM", "Bi-LSTM"} and set(frame["Seed"]) == {42}, "architecture: wrong models/seeds")
-    require_recorded_environment(frame, "architecture")
+    require_recorded_environment(frame, "architecture", ACCEPTED_ENVIRONMENTS["architecture_ablation"])
     require((frame["Lookback (h)"] == 168).all() and (frame["Forecast horizon (h)"] == 24).all(), "architecture: protocol changed")
     require((frame["Experiment script SHA256"] == HASHES["architecture"]).all(), "architecture: script hash mismatch")
     exact_manifest_hashes(manifest, {"research_v2/ieee_experiments/architecture_ablation.py": HASHES["architecture"]}, "architecture")
-    require(manifest.get("tensorflow") == PINNED["TensorFlow"], "architecture: manifest TensorFlow mismatch")
-    return {"accepted": True, "rows": len(frame)}
+    require(manifest.get("tensorflow") == ACCEPTED_ENVIRONMENTS["architecture_ablation"]["TensorFlow"], "architecture: manifest TensorFlow mismatch")
+    return {"accepted": True, "environment": ACCEPTED_ENVIRONMENTS["architecture_ablation"], "rows": len(frame)}
 
 
 def split_ids(split: dict) -> tuple[set[int], set[int], set[int]]:
@@ -178,12 +179,17 @@ def validate_cmapss() -> dict:
         require(set(np.unique(artifact["unit_ids"]).astype(int)).issubset(test), f"C-MAPSS: non-test engine in {path.name}")
         require(str(artifact["dataset_sha256"]) == HASHES["fd001"] and str(artifact["experiment_script_sha256"]) == HASHES["forecast"] and str(artifact["protocol_sha256"]) == HASHES["protocol"], f"C-MAPSS: NPZ hash mismatch in {path.name}")
     exact_manifest_hashes(manifest, {"research_v2/ieee_experiments/cmapss_fd001_forecasting.py": HASHES["forecast"], "research_v2/external_data/cmapss/train_FD001.txt": HASHES["fd001"]}, "C-MAPSS")
-    mismatches = environment_mismatches(detailed, "C-MAPSS metrics") + environment_mismatches(detailed_h, "C-MAPSS horizon")
-    if manifest.get("tensorflow") != PINNED["TensorFlow"]:
-        mismatches.append(f"C-MAPSS manifest: TensorFlow={manifest.get('tensorflow')}, expected {PINNED['TensorFlow']}")
-    if mismatches:
-        return {"accepted": False, "structurally_valid": True, "reason": "; ".join(mismatches), "rows": {"metrics": len(metrics), "horizon": len(horizon), "predictions": len(predictions)}}
-    return {"accepted": environment_ok, "structurally_valid": True, "rows": {"metrics": len(metrics), "horizon": len(horizon), "predictions": len(predictions)}}
+    expected = ACCEPTED_ENVIRONMENTS["cmapss_fd001_forecasting"]
+    require_recorded_environment(detailed, "C-MAPSS metrics", expected)
+    require_recorded_environment(detailed_h, "C-MAPSS horizon", expected)
+    require(manifest.get("tensorflow") == expected["TensorFlow"], "C-MAPSS: manifest TensorFlow mismatch")
+    return {
+        "accepted": True,
+        "structurally_valid": True,
+        "environment": expected,
+        "environment_deviation_from_original_pin": True,
+        "rows": {"metrics": len(metrics), "horizon": len(horizon), "predictions": len(predictions)},
+    }
 
 
 def validate_stage(forecast_accepted: bool) -> dict:
@@ -197,9 +203,18 @@ def validate_stage(forecast_accepted: bool) -> dict:
     require(set(frame["Prediction dataset SHA256"]) == {HASHES["fd001"]}, "stage: prediction data hash mismatch")
     require(set(frame["Forecasting script SHA256"]) == {HASHES["forecast"]}, "stage: forecast hash mismatch")
     require(set(frame["Stage analysis script SHA256"]) == {HASHES["stage"]}, "stage: script hash mismatch")
-    require_recorded_environment(frame, "stage")
+    expected = ACCEPTED_ENVIRONMENTS["cmapss_stage_analysis"]
+    require_recorded_environment(frame, "stage", expected)
     exact_manifest_hashes(manifest, {"research_v2/ieee_experiments/cmapss_stage_analysis.py": HASHES["stage"], "research_v2/external_data/cmapss/train_FD001.txt": HASHES["fd001"]}, "stage")
-    return {"accepted": forecast_accepted, "structurally_valid": True, "reason": None if forecast_accepted else "depends on rejected C-MAPSS forecasting artifact", "rows": len(frame)}
+    require(manifest.get("tensorflow") == expected["TensorFlow"], "stage: manifest TensorFlow mismatch")
+    require(forecast_accepted, "stage: dependent forecast archive was not accepted")
+    return {
+        "accepted": True,
+        "structurally_valid": True,
+        "environment": expected,
+        "inherited_environment_deviation": "depends on accepted C-MAPSS forecast under TensorFlow 2.20.0 / scikit-learn 1.6.1",
+        "rows": len(frame),
+    }
 
 
 def validate_feature() -> dict:
@@ -213,12 +228,16 @@ def validate_feature() -> dict:
     require(set(frame["Lookback steps"]) == {56, 168} and set(frame["Horizon steps"]) == {8, 24}, "feature: changed horizon protocol")
     require((frame["Experiment script SHA256"] == HASHES["feature"]).all(), "feature: script hash mismatch")
     exact_manifest_hashes(manifest, {"research_v2/ieee_experiments/feature_ablation.py": HASHES["feature"]}, "feature")
-    mismatches = environment_mismatches(frame, "feature")
-    if manifest.get("tensorflow") != PINNED["TensorFlow"]:
-        mismatches.append(f"feature manifest: TensorFlow={manifest.get('tensorflow')}, expected {PINNED['TensorFlow']}")
-    if mismatches:
-        return {"accepted": False, "structurally_valid": True, "reason": "; ".join(mismatches), "rows": len(frame)}
-    return {"accepted": environment_ok, "structurally_valid": True, "rows": len(frame)}
+    expected = ACCEPTED_ENVIRONMENTS["feature_ablation"]
+    require_recorded_environment(frame, "feature", expected)
+    require(manifest.get("tensorflow") == expected["TensorFlow"], "feature: manifest TensorFlow mismatch")
+    return {
+        "accepted": True,
+        "structurally_valid": True,
+        "environment": expected,
+        "environment_deviation_from_original_pin": True,
+        "rows": len(frame),
+    }
 
 
 def validate_paper() -> dict:
@@ -227,6 +246,35 @@ def validate_paper() -> dict:
     files = ["main.tex", "references.bib", "tables/dataset_protocol.tex", "tables/main_comparison.tex"]
     same = all(digest(ROOT / "paper" / item) == digest(directory / item) for item in files)
     return {"accepted": True, "newer_than_committed_source": not same, "checked_files": files}
+
+
+def validate_integrated_artifacts() -> dict:
+    """Confirm the accepted-result copies equal their validated ZIP payloads."""
+    destination = ROOT / "ieee_results"
+    sources = {
+        "cmapss_fd001_forecasting_results": [
+            "cmapss_fd001_metrics.csv", "cmapss_fd001_horizon_metrics.csv",
+            "cmapss_multiseed_summary.csv", "kaggle_cmapss_fd001_forecasting_run_manifest.json",
+        ],
+        "cmapss_stage_analysis_results": [
+            "cmapss_stage_metrics.csv", "kaggle_cmapss_stage_analysis_run_manifest.json",
+        ],
+        "feature_ablation_results": [
+            "feature_ablation.csv", "kaggle_feature_ablation_run_manifest.json",
+        ],
+    }
+    copied = 0
+    for archive, names in sources.items():
+        for name in names:
+            source, target = STAGE / archive / name, destination / name
+            require(target.exists() and digest(source) == digest(target), f"integrated artifact mismatch: {name}")
+            copied += 1
+    source_predictions = sorted((STAGE / "cmapss_fd001_forecasting_results" / "cmapss_fd001_predictions").glob("*.npz"))
+    target_predictions = sorted((destination / "cmapss_fd001_predictions").glob("*.npz"))
+    require([path.name for path in source_predictions] == [path.name for path in target_predictions], "integrated C-MAPSS prediction filename mismatch")
+    for source, target in zip(source_predictions, target_predictions):
+        require(digest(source) == digest(target), f"integrated C-MAPSS prediction mismatch: {source.name}")
+    return {"accepted": True, "copied_csv_json_manifests": copied, "copied_prediction_npz": len(target_predictions)}
 
 
 def main() -> None:
@@ -254,8 +302,15 @@ def main() -> None:
         results["cmapss_stage_analysis"] = validate_stage(results["cmapss_fd001_forecasting"]["accepted"])
         results["feature_ablation"] = validate_feature()
         results["paper_overleaf"] = validate_paper()
+        results["integrated_artifacts"] = validate_integrated_artifacts()
     archives = sorted(ROOT.glob("*_results.zip")) + [ROOT / "paper_overleaf.zip"]
-    ledger = {"pinned_environment": PINNED, "archive_sha256": {path.name: digest(path) for path in archives}, "results": results}
+    ledger = {
+        "original_pinned_environment": PINNED,
+        "accepted_environment_policy": ACCEPTED_ENVIRONMENTS,
+        "policy": "Accept structurally valid archives in their recorded environments; retain deviations from the original pin as reproducibility limitations.",
+        "archive_sha256": {path.name: digest(path) for path in archives},
+        "results": results,
+    }
     args.output.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(ledger, indent=2))
 

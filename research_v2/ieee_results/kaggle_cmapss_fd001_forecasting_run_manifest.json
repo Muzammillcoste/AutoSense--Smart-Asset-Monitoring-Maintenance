@@ -1,0 +1,22 @@
+{
+  "phase": "cmapss_fd001_forecasting",
+  "input_sha256": {
+    "research_v2/ieee_experiments/cmapss_fd001_forecasting.py": "cee828114ca0e22800b6bf12faa9643db4646f0c764bbef81558e1a6243a3a65",
+    "research_v2/CODEX_IEEE_EXECUTION_PLAN.md": "1e72e4109507e7968af365367d855fac495439173f38c4c7a72c4ece71c627bb",
+    "research_v2/external_data/cmapss/train_FD001.txt": "963b5e22825b34d8b21c69e1aeb4af3e647050eb672ee8834ba4b5d91d2de0f8",
+    "research_v2/ieee_results/cmapss_fd001_split.json": "9e4c0a4ab7cef63169c1bc87a52885af983ffab5ea8f0e8e886d352e63779003",
+    "research_v2/ieee_results/cmapss_sensor_selection.csv": "5033e1390448a71d6ff29364489b7a122d7b9190ffc851d301168349d4c89665"
+  },
+  "python": "3.12.13 (main, Mar  4 2026, 09:23:07) [GCC 11.4.0]",
+  "tensorflow": "2.20.0",
+  "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+  "devices": [
+    "PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')",
+    "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')",
+    "PhysicalDevice(name='/physical_device:GPU:1', device_type='GPU')"
+  ],
+  "expected_metric_rows": 55,
+  "expected_horizon_rows": 550,
+  "expected_prediction_files": 44,
+  "validation": "fixed 70/15/15 engine split; fixed top four sensors; C0/C1; no duplicate config/sensor/model/seed rows"
+}

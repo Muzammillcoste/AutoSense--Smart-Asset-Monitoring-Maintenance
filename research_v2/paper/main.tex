@@ -18,7 +18,7 @@ NED University of Engineering \& Technology, Karachi, Pakistan\\
 \maketitle
 
 \begin{abstract}
-Sensor forecasting can support maintenance planning when forecasts are connected to monitoring, threshold alerts, and service workflows. This paper presents an integrated IoT-to-enterprise prototype and a comparative evaluation of 24-hour multi-step sensor forecasting. The prototype combines ESP32-S3 acquisition, GPS, DS18B20 temperature sensing, BLE tyre-pressure monitoring, HTTP telemetry, and the Swift platform, with Salesforce alert ingestion and status feedback. Its documented maintenance workflow uses Cases and Flow; the available repository evidence supports integration components rather than a measured operational deployment. A corrected benchmark evaluates persistence, seasonal naive, Random Forest, and a bidirectional long short-term memory (Bi-LSTM) network on three synthetic sensor datasets, using seven days of historical target values and chronological partitions with disjoint target periods. Random Forest achieves the lowest mean absolute error for engine temperature (1.708\degC) and tyre temperature (2.897\degC), while persistence performs best for tyre pressure (0.558 PSI). Bi-LSTM does not beat the best baseline for any target in this fixed experimental setup. These findings motivate evidence-based selection of forecasting models within threshold-based predictive maintenance. The evaluation does not establish failure prediction or maintenance-outcome benefits; external validation on real fleet data remains necessary.
+Sensor forecasting can support maintenance planning when forecasts are connected to monitoring, threshold alerts, and service workflows. This paper presents an integrated IoT-to-enterprise prototype and a comparative evaluation of 24-hour multi-step sensor forecasting. The prototype combines ESP32-S3 acquisition, GPS, DS18B20 temperature sensing, BLE tyre-pressure monitoring, HTTP telemetry, and the Swift platform, with Salesforce alert ingestion and status feedback. Its documented maintenance workflow uses Cases and Flow; the available repository evidence supports integration components rather than a measured operational deployment. A corrected benchmark evaluates persistence, seasonal naive, Random Forest, and a bidirectional long short-term memory (Bi-LSTM) network on three synthetic sensor datasets, using seven days of historical target values and chronological partitions with disjoint target periods. We add five-seed Bi-LSTM robustness, an LSTM/Bi-LSTM architecture comparison, causal feature ablation, proxy threshold-event scoring, moving-block bootstrap intervals, and external sensor-forecasting evaluation on the NASA C-MAPSS FD001 simulator benchmark. Random Forest achieves the lowest mean absolute error for engine temperature (1.708\degC) and tyre temperature (2.897\degC), while persistence performs best for tyre pressure (0.558 PSI). The C-MAPSS and feature experiments use a separately recorded TensorFlow/scikit-learn environment, which is retained as a reproducibility limitation. The evaluation does not establish failure prediction, real-fleet deployment, or maintenance-outcome benefits.
 \end{abstract}
 \begin{IEEEkeywords}
 Internet of Things, multi-step forecasting, predictive maintenance, Random Forest, Bi-LSTM, enterprise maintenance workflow.
@@ -31,17 +31,40 @@ The intended application of AutoSense is vehicle monitoring, including the aviat
 
 The forecasting study compares models under a shared protocol instead of assuming that a recurrent neural network is the strongest choice. Straightforward forecasting methods provide essential reference points~\cite{hyndman2021}. We separate two kinds of evidence: repository artifacts describing a telemetry-to-service prototype, and numerical results from a reproducible synthetic-data benchmark. This separation prevents interface demonstrations from being interpreted as forecast validation.
 
-The contributions are: (1) an IoT-to-maintenance workflow prototype connecting telemetry, monitoring, forecasting interfaces, alerts, and enterprise status feedback; (2) a standardized 24-hour forecasting benchmark for three sensor variables with consistent information access and disjoint target periods; (3) a comparison of persistence, seasonal naive, Random Forest, and Bi-LSTM; and (4) an evidence-bounded account of Salesforce maintenance integration. The benchmark shows that simpler methods outperform the evaluated Bi-LSTM configuration on all three targets. The contribution is comparative evaluation and system integration, rather than a new forecasting algorithm.
+The contributions are: (1) an IoT-to-maintenance workflow prototype connecting telemetry, monitoring, forecasting interfaces, alerts, and enterprise status feedback; (2) a standardized 24-hour forecasting benchmark for three sensor variables with consistent information access and disjoint target periods; (3) robustness, architecture, feature, threshold-event, and dependence-aware uncertainty analyses; (4) a C-MAPSS FD001 external simulated-benchmark sensor-forecasting study with engine-level separation; and (5) an evidence-bounded account of Salesforce maintenance integration. The contribution is comparative evaluation and system integration, rather than a new forecasting algorithm or a claim of Bi-LSTM superiority.
 
 \section{Related Work}
 \subsection{Predictive Maintenance and Fleet Monitoring}
-Zhu \emph{et al.} organize predictive maintenance around system architectures, objectives, and analysis approaches~\cite{zhu2024}. This broader perspective motivates connecting sensor interpretation to a maintenance decision process. It does not validate this prototype's fleet suitability or establish that sensor forecast error translates into fewer breakdowns. Here, fleet monitoring supplies the application context; labelled maintenance outcomes would be needed to evaluate downstream benefit.
+Condition-based maintenance is commonly framed as data acquisition, data
+processing, and maintenance decision-making~\cite{jardine2006}. Reviews of
+machine-learning predictive maintenance likewise emphasize that performance is
+task- and data-dependent rather than a property of a model family in
+isolation~\cite{carvalho2019,zhu2024}. This motivates separating the present
+forecasting metrics from the unmeasured downstream maintenance decision. Fleet
+monitoring is the application context here; labelled maintenance outcomes would
+be required to evaluate breakdown avoidance, cost, or downtime.
 
 \subsection{IoT Maintenance Architectures}
 Cloud-enhanced maintenance architectures connect acquisition and analytical components~\cite{zhu2024}. In our implementation, an ESP32-S3 provides the acquisition and wireless communication platform, while the DS18B20 provides a digital temperature interface~\cite{esp32,ds18b20}. These component references establish device capabilities, not automotive qualification, sensing accuracy in the installed configuration, or end-to-end reliability. The prototype's concrete evidence consists of firmware, a circuit schematic, interface captures, and integration code.
 
 \subsection{Sensor Time-Series Forecasting}
 Naive and seasonal naive methods establish useful forecasting benchmarks~\cite{hyndman2021}. Random Forest combines randomized tree predictors~\cite{breiman2001}, providing a nonlinear model of lagged target values without recurrent state. LSTM introduces gated recurrent memory~\cite{hochreiter1997}, while bidirectional recurrent processing encodes a sequence in both temporal directions~\cite{schuster1997}. In forecasting, both directions may process the observed input window without accessing future targets. These methodological foundations justify the comparison; they do not imply superior predictive-maintenance performance for a particular architecture.
+
+\subsection{External Simulated Degradation Benchmarks}
+NASA's C-MAPSS repository provides simulator-generated run-to-failure turbofan
+trajectories under controlled operating and fault settings~\cite{saxena2008}.
+Many C-MAPSS studies target remaining useful life (RUL). That task is deliberately different from ours: we
+forecast four observed sensors ten cycles ahead from complete FD001 training
+trajectories, and use normalized life only after prediction to stratify error.
+Thus no C-MAPSS RUL score or physical-flight-telemetry claim is made.
+
+\begin{table*}[t]
+\caption{Compact, verifiable positioning of this study. ``Decision/workflow''
+means an evaluated downstream decision, not merely an architecture diagram.}
+\label{tab:related-work}
+\centering\scriptsize
+\input{tables/related_work.tex}
+\end{table*}
 
 \subsection{Enterprise Maintenance Workflow Integration}
 Salesforce Flow supports record-triggered criteria and record-creation actions~\cite{salesforceflow}. Such mechanisms can translate an alert into a service workflow. Product documentation establishes that capability, whereas deployment-specific validation requires configuration exports and execution evidence. We describe the available alert-ingestion and vehicle-status code separately from the Case/Flow linkage documented in the original project narrative.
@@ -63,7 +86,13 @@ Threshold logic connects readings or forecast excursions to alerts. For a target
 A_t=\mathbb{1}\{\exists h\in\{1,\ldots,H\}:\hat y_{t+h|t}<a\ \text{or}\ \hat y_{t+h|t}>b\}.
 \label{eq:alert}
 \end{equation}
-Equation~\ref{eq:alert} states the intended threshold semantics, not an evaluated alarm classifier. Bounds must be appropriate to the sensor placement and asset; a threshold displayed in a screenshot is a configured prototype value, not a validated safety limit. We do not estimate alert precision, recall, lead time, or maintenance effectiveness.
+Equation~\ref{eq:alert} states the intended threshold semantics. Bounds must
+be appropriate to the sensor placement and asset; a threshold displayed in a
+screenshot is a configured prototype value, not a validated safety limit. We
+do report offline precision, recall, F1, false-positive rate, and an
+origin-level lead-time convention for training-derived proxy excursion labels.
+Those labels are neither failures nor certified engineering alarms, and no
+maintenance effectiveness is estimated.
 
 Salesforce is the maintenance/service workflow layer. The available Apex code imports alerts into a custom Vehicle Alert object, checks existing alert identifiers before inserting records, and sends vehicle-status updates back to Swift through an asynchronous callout. The original project describes Cases and Flow for maintenance-task creation and resolution feedback. Because those Flow definitions are not exported in the repository, that part of the diagram remains a documented integration design, rather than independently reproduced Case automation.
 
@@ -105,11 +134,33 @@ R^2&=1-\frac{\sum_{i,h}e_{ih}^{2}}{\sum_{i,h}(y_{ih}-\bar y)^2},
 where $\bar y$ is the pooled target mean. MAE and RMSE retain physical units; $R^2$ is dimensionless. Negative $R^2$ means worse squared error than the pooled-mean reference. Horizon-wise MAE averages across origins at each step. Pooling counts a timestamp more than once when predicted at different horizons; it is not a metric over unique timestamps.
 
 \section{Experimental Setup}
-The committed corrected experiment uses Python 3.11.9, TensorFlow 2.18.0, NumPy 2.0.2, pandas 2.2.2, and scikit-learn 1.9.0 on a CPU. Random seeds are fixed to 42; TensorFlow deterministic operations are enabled. Neural training uses Adam, mean squared error loss, batch size 64, and no training-window shuffling. Early stopping monitors validation loss with patience five and restores the best weights, subject to a maximum of 20 epochs. No test-driven tuning or further neural training was performed for this paper.
+The corrected single-seed benchmark, five-seed AutoSense Bi-LSTM study, and
+architecture ablation record TensorFlow 2.18.0 and scikit-learn 1.9.0; the
+five-seed study also records NumPy 2.0.2 and pandas 2.2.2. The C-MAPSS
+forecasting and feature-ablation runs record TensorFlow 2.20.0 and
+scikit-learn 1.6.1. The C-MAPSS stage analysis records TensorFlow 2.18.0 and
+scikit-learn 1.9.0 but consumes forecasts from the 2.20.0/1.6.1 forecasting
+run. This heterogeneous environment is a documented reproducibility
+limitation, not a claim of uniform software execution.
 
-The engine, tyre-pressure, and tyre-temperature networks ran for 11, 20, and nine epochs; their best validation epochs were six, 20, and four, respectively. The tyre-pressure model reached the epoch cap at its best validation epoch, so its convergence is not established. All models are evaluated on the same test target period starting October 19. This is one chronological holdout and one seed, rather than a repeated-split study.
+Random seeds are fixed to 42 unless a phase explicitly uses the predeclared
+five AutoSense seeds (11, 21, 42, 84, 168) or three C-MAPSS Bi-LSTM seeds
+(11, 42, 84). Neural training uses Adam, mean squared error loss, batch size
+64, no training-window shuffling, a 20-epoch cap, and validation-loss early
+stopping with patience five and restored best weights. The feature study fixes
+F0 (target history), F1 (target plus deterministic calendar), and F2 (target,
+calendar, and causal lag/rolling features); it never uses centered windows.
+No validation/test values select features, sensors, scalers, thresholds, or
+hyperparameters.
 
-The scientific source is the committed \texttt{research\_v2/results} artifact set. Figure preparation exports missing baseline predictions through the original evaluation utility with unchanged parameters and checks all nine baseline MAE, RMSE, and $R^2$ values against the committed table within $10^{-10}$ relative and absolute tolerances. Saved targets and origin indices match the neural prediction artifacts exactly. Thus, baseline replay adds aligned prediction artifacts without defining a new experiment. Data hashes, source revision, plotting code, and window-selection metadata accompany the paper.
+The scientific source is the committed \texttt{research\_v2/results} and
+\texttt{research\_v2/ieee\_results} artifact sets. Archive validation checks
+source/data/protocol hashes, row counts, unique experiment keys, seed sets, and
+recorded environments. For C-MAPSS FD001 it additionally checks the fixed
+70/15/15 engine-level split, training-only selected sensors (9, 11, 14, and
+12), 30-cycle lookback, 10-cycle horizon, and that all 44 prediction NPZs
+contain only pre-registered test-engine IDs. Figure and table source hashes are
+stored with the generated assets.
 
 \section{Results and Discussion}
 \subsection{Aggregate Comparison}
@@ -154,6 +205,141 @@ Synthetic structure may favor simpler autoregressive or seasonal predictors, whi
 
 For this benchmark, Random Forest is the empirical choice for the two temperature targets and persistence for pressure when MAE is the selection criterion. This retrospective ranking does not establish a production selection policy or an unbiased estimate of a newly tuned system. Deployment should evaluate model choices under a pre-declared validation procedure and verify cadence, sensor calibration, threshold meaning, and live data quality. The integrated prototype remains useful as a place to connect a suitable forecast model to a service process, irrespective of model family.
 
+\section{Robustness and Ablation Studies}
+Table~\ref{tab:robustness} and Fig.~\ref{fig:robustness} report all five
+predeclared Bi-LSTM initialization seeds rather than selecting a favorable
+seed. Mean $R^2$ is negative for tyre temperature ($-0.835\pm0.536$), so the
+five-seed results do not support a blanket claim of Bi-LSTM superiority.
+
+\begin{table*}[t]
+\caption{Five-seed AutoSense Bi-LSTM results. Values are mean $\pm$ sample
+standard deviation over seeds 11, 21, 42, 84, and 168.}
+\label{tab:robustness}
+\centering\small
+\input{tables/ieee_upgrade/multiseed_robustness.tex}
+\end{table*}
+
+\begin{figure*}[t]
+\centering\includegraphics[width=\textwidth]{ieee_upgrade/multiseed_robustness.pdf}
+\caption{Five-seed Bi-LSTM MAE. Each panel retains its native physical unit.}
+\label{fig:robustness}
+\end{figure*}
+
+The seed-42 architecture ablation finds lower Bi-LSTM MAE for engine
+temperature (6.199 versus 9.539\degC) and tyre pressure (1.182 versus 1.298
+PSI), but lower LSTM MAE for tyre temperature (4.402 versus 6.366\degC).
+Table~\ref{tab:architecture} is therefore a controlled first-pass comparison,
+not a seed-robust architecture ranking. The causal feature ablation is shown
+in Table~\ref{tab:features}. F2 lowers engine-temperature MAE for both RF and
+LSTM relative to F0, whereas feature effects differ by target; no feature set
+was chosen from test results.
+
+\begin{table*}[t]
+\caption{Architecture ablation at seed 42; common chronological splits,
+train-only scaling, training budget, and model definitions are retained.}
+\label{tab:architecture}
+\centering\small
+\input{tables/ieee_upgrade/architecture_ablation.tex}
+\end{table*}
+
+\begin{table*}[t]
+\caption{Causal feature-ablation MAE at seed 42. F0: target history; F1:
+target plus deterministic calendar; F2: F1 plus causal lag/rolling features.}
+\label{tab:features}
+\centering\small
+\input{tables/ieee_upgrade/feature_ablation.tex}
+\end{table*}
+
+\begin{figure*}[t]
+\centering\includegraphics[width=\textwidth]{ieee_upgrade/architecture_feature_ablation.pdf}
+\caption{Architecture and causal-feature ablations. Panels use separate
+native-unit axes; RF denotes Random Forest.}
+\label{fig:ablations}
+\end{figure*}
+
+\section{Threshold-Event Evaluation and Uncertainty}
+Thresholds are derived from the AutoSense training region only. Table
+\ref{tab:events} reports proxy-event scores, including the high tyre-temperature
+Bi-LSTM F1 (0.802) together with its false-positive rate of 1.0 and specificity
+of 0.0. It is consequently not a useful discriminative alert detector. These
+scores concern forecast excursions from data-derived proxy bounds, not
+component failures or certified engineering thresholds.
+
+\begin{table*}[t]
+\caption{Training-derived proxy threshold-event metrics. FPR is false-positive
+rate; these labels are not failure labels.}
+\label{tab:events}
+\centering\scriptsize
+\input{tables/ieee_upgrade/threshold_events.tex}
+\end{table*}
+
+\begin{figure*}[t]
+\centering\includegraphics[width=\textwidth]{ieee_upgrade/threshold_event_evaluation.pdf}
+\caption{Proxy-event F1 with the event prevalence shown per target.}
+\label{fig:events}
+\end{figure*}
+
+For the predeclared lowest-MAE corrected baseline against Bi-LSTM, the
+2,000-replication non-circular moving-block bootstrap intervals for
+MAE(baseline) $-$ MAE(Bi-LSTM) are $[-5.033,-3.955]$\degC for engine
+temperature (RF), $[-0.845,-0.356]$ PSI for tyre pressure (persistence), and
+$[-3.732,-3.392]$\degC for tyre temperature (RF). Every interval excludes
+zero, but dependence-aware intervals are not i.i.d. significance tests or
+evidence of operational benefit.
+
+\section{External Validation on NASA C-MAPSS FD001}
+NASA C-MAPSS FD001 is an external \emph{simulated} engine-degradation
+benchmark, not real measured flight telemetry. We forecast sensors 9, 11, 14,
+and 12 at horizons one through ten cycles, using the fixed disjoint 70/15/15
+engine split. C0 uses target history only; C1 uses multivariate history. No
+engine occurs in more than one split, sensor selection uses training engines
+only, and the scaler is fitted on training engines only.
+
+Table~\ref{tab:cmapss} gives training-range-normalized macro results, which
+avoid averaging incomparable native sensor units. In C1, Random Forest has
+the lowest macro normalized MAE (0.03406) and normalized RMSE (0.04278), while
+LSTM has $R^2=0.88620$. These values describe the fixed configurations rather
+than a tuned model contest. The results were recorded with TensorFlow 2.20.0
+and scikit-learn 1.6.1, unlike the 2.18.0/1.9.0 AutoSense runs.
+
+\begin{table*}[t]
+\caption{C-MAPSS FD001 macro-average training-range-normalized metrics.
+Bi-LSTM uses the three predeclared seeds; C0 is target-only and C1 is
+multivariate history.}
+\label{tab:cmapss}
+\centering\small
+\input{tables/ieee_upgrade/cmapss_macro_forecasting.tex}
+\end{table*}
+
+\begin{figure*}[t]
+\centering\includegraphics[width=\textwidth]{ieee_upgrade/cmapss_external_validation.pdf}
+\caption{C-MAPSS C1 normalized MAE by target sensor. The displayed Bi-LSTM
+bar is seed 42; all three Bi-LSTM seeds remain in Table~\ref{tab:cmapss}.}
+\label{fig:cmapss}
+\end{figure*}
+
+\begin{figure}[t]
+\centering\includegraphics[width=\columnwidth]{ieee_upgrade/cmapss_horizon_mae.pdf}
+\caption{C-MAPSS C1 normalized MAE by forecast horizon for sensor 9 (Bi-LSTM
+seed 42).}
+\label{fig:cmapss-horizon}
+\end{figure}
+
+The fixed early ($<0.5$), mid ($0.5$ to $<0.8$), and late ($\geq0.8$)
+normalized-life bins are used only to stratify held-out sensor-forecasting
+error after prediction; they do not create an RUL target. Figure
+\ref{fig:stages} reports C1 stage metrics for each sensor and model. The stage
+script itself records TensorFlow 2.18.0/scikit-learn 1.9.0, but its inputs are
+the accepted forecast artifacts recorded under TensorFlow 2.20.0/scikit-learn
+1.6.1; that inherited environment deviation remains part of the provenance.
+
+\begin{figure*}[t]
+\centering\includegraphics[width=\textwidth]{ieee_upgrade/cmapss_stage_error.pdf}
+\caption{C-MAPSS C1 MAE stratified by fixed normalized-life stage. Each panel
+uses native units and displays the seed-42 Bi-LSTM for readability.}
+\label{fig:stages}
+\end{figure*}
+
 \section{Prototype Integration and Workflow Validation}
 The repository provides three complementary forms of integration evidence. First, firmware implements sensor parsing, telemetry payloads, and platform transmission. Second, platform scripts and interface captures demonstrate the intended ingestion and forecast-display interfaces. Third, Salesforce Apex implements alert import and vehicle-status callbacks. These artifacts support technical feasibility at the prototype level; the present work inspects them without contacting live endpoints or rerunning hardware and Salesforce tests.
 
@@ -178,12 +364,36 @@ Case creation and assignment through Flow, the resolution-to-vehicle linkage, an
 \section{Limitations}
 The principal limitation is synthetic data: the results measure forecasting on generator-produced signals rather than external real-fleet observations. The hardware and software artifacts do not establish domain transfer, automotive robustness, or aviation operational validation. Sensor placement and calibration also determine whether a displayed temperature is a useful proxy for engine condition.
 
-The benchmark uses one chronological holdout, one random seed, historical target values only, and a fixed limited training budget with no full hyperparameter search. The pressure network reaches the epoch cap. Therefore, model rankings apply to the evaluated configurations and periods. Overlapping forecast origins yield dependent errors, and no uncertainty intervals or repeated-run variability estimates are reported. Negative $R^2$ and physical-unit errors are retained rather than replaced by normalized metrics.
+The corrected benchmark's main comparison uses one chronological holdout and a
+fixed limited training budget with no full hyperparameter search. Five-seed
+variation is reported only for the AutoSense Bi-LSTM, and the LSTM/Bi-LSTM
+architecture comparison remains a seed-42 first pass. Overlapping forecast
+origins yield dependent errors; the moving-block intervals address this
+dependence for the predeclared baseline-versus-Bi-LSTM MAE comparisons but do
+not convert the study into repeated-split validation. Negative $R^2$ and
+physical-unit errors are retained rather than replaced by normalized metrics.
+
+The C-MAPSS study is an external simulated benchmark rather than a real fleet
+or measured flight-telemetry validation. It uses a different recorded
+TensorFlow/scikit-learn environment from some AutoSense phases; version
+heterogeneity limits exact cross-environment reproducibility even though the
+pre-registered sources, splits, sensors, scalers, settings, hashes, and
+prediction-engine IDs were validated. Feature-ablation conclusions likewise
+belong to their recorded TensorFlow 2.20.0/scikit-learn 1.6.1 environment.
 
 There are no maintenance-outcome labels, direct failure or remaining-useful-life targets, or measured downtime and cost reductions. Forecast accuracy alone cannot establish operational maintenance benefit or calibrated alarm risk. Case/Flow configuration and live transaction logs are incomplete in the repository, so the fully closed service loop remains less strongly evidenced than its constituent ingestion and status components. The legacy integration scripts have not been migrated to the corrected benchmark protocol.
 
 \section{Conclusion and Future Work}
-This work presents an integrated IoT-to-enterprise prototype and a corrected comparative study of 24-hour multi-step sensor forecasting. The available firmware, platform interfaces, and Salesforce code support prototype-level technical feasibility, with explicit limits on workflow validation. On three synthetic datasets, Random Forest provides the lowest temperature MAEs and persistence the lowest pressure MAE. Simple baselines outperform the evaluated Bi-LSTM in all three best-baseline comparisons, motivating evidence-based forecasting model selection.
+This work presents an integrated IoT-to-enterprise prototype and a corrected
+comparative study of 24-hour multi-step sensor forecasting. The available
+firmware, platform interfaces, and Salesforce code support prototype-level
+technical feasibility, with explicit limits on workflow validation. On three
+synthetic datasets, Random Forest provides the lowest temperature MAEs and
+persistence the lowest pressure MAE. Five-seed robustness, fixed architecture
+and causal-feature ablations, proxy threshold-event metrics, and moving-block
+intervals reinforce the need for evidence-based model selection. A separate,
+engine-disjoint C-MAPSS FD001 simulated-benchmark study extends the analysis to
+multivariate sensor forecasting, while retaining its environment deviation.
 
 Future work should prioritize real fleet data collection, genuine failure and maintenance labels, and external validation. Uncertainty-aware forecasts and richer CAN bus features should be assessed under a pre-declared model-selection protocol with strong baselines. More complex architectures, including Transformers, would require that same evidential standard. Completing and exporting Case/Flow configuration, validating the live feedback loop, and measuring maintenance outcomes would connect forecast quality to practical service value.
 

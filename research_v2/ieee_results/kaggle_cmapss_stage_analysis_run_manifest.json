@@ -1,0 +1,18 @@
+{
+  "phase": "cmapss_stage_analysis",
+  "input_sha256": {
+    "research_v2/ieee_experiments/cmapss_stage_analysis.py": "6d195848d6f53062db61b199da602d257ed91c5b1a2d20fbea36257b99d51b21",
+    "research_v2/CODEX_IEEE_EXECUTION_PLAN.md": "1e72e4109507e7968af365367d855fac495439173f38c4c7a72c4ece71c627bb",
+    "research_v2/external_data/cmapss/train_FD001.txt": "963b5e22825b34d8b21c69e1aeb4af3e647050eb672ee8834ba4b5d91d2de0f8",
+    "research_v2/ieee_results/cmapss_fd001_split.json": "9e4c0a4ab7cef63169c1bc87a52885af983ffab5ea8f0e8e886d352e63779003"
+  },
+  "python": "3.12.13 (main, Mar  4 2026, 09:23:07) [GCC 11.4.0]",
+  "tensorflow": "2.18.0",
+  "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+  "devices": [
+    "PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')",
+    "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+  ],
+  "expected_rows": 132,
+  "validation": "44 fixed forecast artifacts x 3 predeclared stages; no duplicate configuration/sensor/model/seed/stage rows"
+}

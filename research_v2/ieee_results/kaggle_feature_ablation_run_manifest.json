@@ -1,0 +1,20 @@
+{
+  "phase": "feature_ablation",
+  "input_sha256": {
+    "research_v2/ieee_experiments/feature_ablation.py": "4f55e57e169a03cef6069a20a436f5e3832933c7ea616835e1da3c7ed63664aa",
+    "research_v2/baseline_evaluation.py": "1981a9e35441c272b9843a7d4f2c1599f4d033040607355a6d8892cb441b4fba",
+    "research_v2/protocol.py": "d02d7e9be7883446adfe9844597c4b9c8bb02719e942bb5a69362a6aeeaa82dd",
+    "FYP ML Training and Pipeline Code/Engine Temperature/karachi_2024_vehicle_temperature_data.csv": "d6528d327f13978592bff712684343087a99942694d99f81ebda7ff28978581e",
+    "FYP ML Training and Pipeline Code/TP_Generated/tyre_pressure_2024.csv": "63270ee9d3211afc3b6c6fcca798b89c4303721caa6924c34e44d112d45688f3",
+    "FYP ML Training and Pipeline Code/Tyre Temperature/tyre_temp_2024.csv": "451301b1fef1c683e844bffdec67cc93c607836b42ce1a344219b7b080379c3a"
+  },
+  "python": "3.12.13 (main, Mar  4 2026, 09:23:07) [GCC 11.4.0]",
+  "tensorflow": "2.20.0",
+  "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
+  "devices": [
+    "PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')",
+    "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+  ],
+  "expected_rows": 18,
+  "validation": "unique Dataset/Feature configuration/Model/Seed; F0/F1/F2 fixed; script asserts split metadata and F2 keeps standard test origins"
+}
