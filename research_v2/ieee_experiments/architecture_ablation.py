@@ -24,7 +24,9 @@ benchmark artifacts under ``research_v2/results`` are never overwritten.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
+import platform
 import random
 import sys
 import time
@@ -39,6 +41,7 @@ os.environ.setdefault("TF_DETERMINISTIC_OPS", "1")
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import sklearn
 from sklearn.preprocessing import MinMaxScaler
 
 
@@ -65,6 +68,40 @@ SEED_LIMITATION = (
     "architecture ranking; no architecture was tuned against test results."
 )
 SCALER_POLICY = "MinMaxScaler fit only on raw fitting-region target rows"
+FIXED_PROTOCOL_METADATA = {
+    "engine_temperature": {"Lookback steps": 168, "Horizon steps": 24,
+                           "Train end row exclusive": 5956, "Test start row": 7008,
+                           "Train rows": 5956, "Validation rows": 1052, "Test rows": 1753},
+    "tyre_pressure": {"Lookback steps": 56, "Horizon steps": 8,
+                      "Train end row exclusive": 1985, "Test start row": 2336,
+                      "Train rows": 1985, "Validation rows": 351, "Test rows": 585},
+    "tyre_temperature": {"Lookback steps": 56, "Horizon steps": 8,
+                         "Train end row exclusive": 1985, "Test start row": 2336,
+                         "Train rows": 1985, "Validation rows": 351, "Test rows": 585},
+}
+
+
+def sha256(path: Path) -> str:
+    """Return the content hash used to bind a result row to its sources."""
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def run_provenance() -> dict[str, object]:
+    """Record environment and fixed source identities in every output row."""
+
+    return {
+        "Experiment script SHA256": sha256(Path(__file__)),
+        "Protocol SHA256": sha256(RESEARCH_ROOT / "protocol.py"),
+        "Bi-LSTM architecture source SHA256": sha256(RESEARCH_ROOT / "bilstm_evaluation.py"),
+        "LSTM architecture source SHA256": sha256(Path(__file__)),
+        "Python": sys.version.split()[0],
+        "TensorFlow": tf.__version__,
+        "scikit-learn": sklearn.__version__,
+        "Platform": platform.platform(),
+        "Devices": str([str(device) for device in tf.config.list_physical_devices()]),
+        "TensorFlow deterministic ops": True,
+    }
 
 
 def build_lstm(lookback: int, horizon: int) -> tf.keras.Model:
@@ -249,12 +286,21 @@ def run_dataset(dataset: str, verbosity: int = 2) -> list[dict]:
     """Run both pre-declared architectures on an identical protocol split."""
 
     X, y, masks, values, starts, _times, metadata = prepare(dataset)
+    expected_metadata = FIXED_PROTOCOL_METADATA[dataset]
+    actual_metadata = {key: metadata.get(key) for key in expected_metadata}
+    if actual_metadata != expected_metadata:
+        raise ValueError(
+            f"{dataset} no longer matches the committed chronological protocol: "
+            f"expected {expected_metadata}, got {actual_metadata}"
+        )
     metadata = {
         **metadata,
         **origin_metadata(starts, masks),
         "Features": [DATASETS[dataset]["target_col"]],
         "Feature configuration": "F0 target history only",
         "Ablation comparison": "LSTM versus exact current Bi-LSTM family",
+        "Dataset SHA256": metadata["SHA256"],
+        **run_provenance(),
     }
     scaler, X_scaled, y_scaled = scale_from_fitting_region(
         values, X, y, metadata["Train end row exclusive"]

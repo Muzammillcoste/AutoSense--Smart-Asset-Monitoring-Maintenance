@@ -10,6 +10,8 @@ os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
 os.environ.setdefault("TF_DETERMINISTIC_OPS", "1")
 
 import json
+import hashlib
+import platform
 import random
 import sys
 import time
@@ -18,6 +20,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import sklearn
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import MinMaxScaler
 
@@ -39,6 +42,37 @@ CONFIGURATIONS = {
     "F1": "target history plus deterministic calendar features at observed input timestamps",
     "F2": "F1 plus a real 24-hour causal lag and trailing 72-hour causal mean",
 }
+FIXED_PROTOCOL_METADATA = {
+    "engine_temperature": {"Lookback steps": 168, "Horizon steps": 24,
+                           "Train end row exclusive": 5956, "Test start row": 7008,
+                           "Train rows": 5956, "Validation rows": 1052, "Test rows": 1753},
+    "tyre_pressure": {"Lookback steps": 56, "Horizon steps": 8,
+                      "Train end row exclusive": 1985, "Test start row": 2336,
+                      "Train rows": 1985, "Validation rows": 351, "Test rows": 585},
+    "tyre_temperature": {"Lookback steps": 56, "Horizon steps": 8,
+                         "Train end row exclusive": 1985, "Test start row": 2336,
+                         "Train rows": 1985, "Validation rows": 351, "Test rows": 585},
+}
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def run_provenance() -> dict[str, object]:
+    """Bind every feature-ablation row to the exact run environment/sources."""
+
+    return {
+        "Experiment script SHA256": sha256(Path(__file__)),
+        "Protocol SHA256": sha256(RESEARCH_ROOT / "protocol.py"),
+        "Architecture source SHA256": sha256(Path(__file__)),
+        "Python": sys.version.split()[0],
+        "TensorFlow": tf.__version__,
+        "scikit-learn": sklearn.__version__,
+        "Platform": platform.platform(),
+        "Devices": str([str(device) for device in tf.config.list_physical_devices()]),
+        "TensorFlow deterministic ops": True,
+    }
 
 
 def set_seed(seed: int) -> None:
@@ -129,6 +163,13 @@ def fixed_random_forest() -> RandomForestRegressor:
 def run_configuration(name: str, configuration: str) -> list[dict]:
     """Run both predeclared models for one data set/configuration pair."""
     _, targets, masks, values, starts, times, meta = prepare(name)
+    expected_metadata = FIXED_PROTOCOL_METADATA[name]
+    actual_metadata = {key: meta.get(key) for key in expected_metadata}
+    if actual_metadata != expected_metadata:
+        raise ValueError(
+            f"{name} no longer matches the committed chronological protocol: "
+            f"expected {expected_metadata}, got {actual_metadata}"
+        )
     raw_features, feature_names, feature_details = make_raw_features(
         values, times, configuration, meta["Sampling interval (h)"]
     )
@@ -162,6 +203,7 @@ def run_configuration(name: str, configuration: str) -> list[dict]:
     truth = targets[masks["test"]]
     common = {
         "Dataset": name,
+        "Dataset SHA256": meta["SHA256"],
         "Feature configuration": configuration,
         "Feature description": CONFIGURATIONS[configuration],
         "Feature names": json.dumps(feature_names),
@@ -181,6 +223,7 @@ def run_configuration(name: str, configuration: str) -> list[dict]:
         "Test forecast origins": int(masks["test"].sum()),
         "Train forecast origins used": int(masks["train"].sum()),
         "Validation forecast origins used": int(masks["validation"].sum()),
+        **run_provenance(),
         **feature_details,
     }
     rows: list[dict] = []
@@ -196,6 +239,7 @@ def run_configuration(name: str, configuration: str) -> list[dict]:
         **common,
         "Model": "Random Forest",
         "Parameter count": np.nan,
+        "Model parameters": np.nan,
         "Training seconds": time.monotonic() - start,
         "Epochs run": np.nan,
         "Best epoch": np.nan,
@@ -221,6 +265,7 @@ def run_configuration(name: str, configuration: str) -> list[dict]:
         **common,
         "Model": "LSTM",
         "Parameter count": int(network.count_params()),
+        "Model parameters": int(network.count_params()),
         "Training seconds": time.monotonic() - start,
         "Epochs run": len(history.history["loss"]),
         "Best epoch": int(np.argmin(history.history["val_loss"]) + 1),

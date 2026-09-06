@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import platform
 import random
 import sys
 import time
@@ -21,6 +22,7 @@ os.environ.setdefault("TF_DETERMINISTIC_OPS", "1")
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import sklearn
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
@@ -32,6 +34,7 @@ PRED_DIR = OUT / "cmapss_fd001_predictions"
 LOOKBACK, HORIZON, SEED, EPOCHS, BATCH, PATIENCE = 30, 10, 42, 20, 64, 5
 NEAR_CONSTANT_RELATIVE_VARIANCE = 1e-8
 NEURAL_SEEDS = (11, 42, 84)
+PRE_REGISTERED_SENSORS = ("sensor_9", "sensor_11", "sensor_14", "sensor_12")
 
 
 def digest(path: Path) -> str:
@@ -40,6 +43,25 @@ def digest(path: Path) -> str:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def run_provenance(protocol_path: Path, split_path: Path, selection_path: Path) -> dict[str, object]:
+    """Return source, environment, and pre-registration identity fields."""
+
+    return {
+        "Experiment script SHA256": digest(Path(__file__)),
+        "Protocol SHA256": digest(protocol_path),
+        "C-MAPSS engine split SHA256": digest(split_path),
+        "Sensor selection SHA256": digest(selection_path),
+        "Architecture source SHA256": digest(Path(__file__)),
+        "Python": sys.version.split()[0],
+        "TensorFlow": tf.__version__,
+        "scikit-learn": sklearn.__version__,
+        "Platform": platform.platform(),
+        "Devices": str([str(device) for device in tf.config.list_physical_devices()]),
+        "TensorFlow deterministic ops": True,
+        "Neural seed set": json.dumps(NEURAL_SEEDS),
+    }
 
 
 def load_fd001() -> pd.DataFrame:
@@ -76,7 +98,15 @@ def engine_split(frame: pd.DataFrame) -> dict:
               "seeded_engine_permutation": list(map(int, permutation)),
               **split, "dataset_sha256": digest(DATA / "train_FD001.txt"),
               "rows": int(len(frame)), "columns": 26}
-    (OUT / "cmapss_fd001_split.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    destination = OUT / "cmapss_fd001_split.json"
+    if destination.exists():
+        existing = json.loads(destination.read_text(encoding="utf-8"))
+        fields = ("train_engine_ids", "validation_engine_ids", "test_engine_ids", "dataset_sha256")
+        if any(existing.get(field) != result[field] for field in fields):
+            raise ValueError("Pre-registered C-MAPSS engine split does not match the authoritative FD001 data")
+        # Preserve the committed pre-registration artifact byte-for-byte.
+        return existing
+    destination.write_text(json.dumps(result, indent=2), encoding="utf-8")
     return result
 
 
@@ -111,8 +141,25 @@ def select_sensors(frame: pd.DataFrame, train_ids: list[int]) -> list[str]:
     ranking["Rank among retained"] = np.nan
     ranking.loc[candidates.index, "Rank among retained"] = np.arange(1, len(candidates) + 1)
     ranking["Selected top four"] = ranking.Sensor.isin(selected)
-    ranking.to_csv(OUT / "cmapss_sensor_selection.csv", index=False)
-    return selected
+    if tuple(selected) != PRE_REGISTERED_SENSORS:
+        raise ValueError(
+            "Training-only sensor procedure did not reproduce the pre-registered "
+            f"selection {PRE_REGISTERED_SENSORS}: got {tuple(selected)}"
+        )
+    destination = OUT / "cmapss_sensor_selection.csv"
+    if destination.exists():
+        existing = pd.read_csv(destination)
+        if "Selected top four" not in existing or "Sensor" not in existing:
+            raise ValueError("Pre-registered sensor-selection artifact has required columns missing")
+        existing_selected = existing.loc[
+            existing["Selected top four"].astype(str).str.lower().eq("true"), "Sensor"
+        ].tolist()
+        if set(existing_selected) != set(PRE_REGISTERED_SENSORS):
+            raise ValueError("Pre-registered selected C-MAPSS sensors do not match the fixed plan")
+        # Do not overwrite the pre-test selection artifact.
+        return list(PRE_REGISTERED_SENSORS)
+    ranking.to_csv(destination, index=False)
+    return list(PRE_REGISTERED_SENSORS)
 
 
 def make_windows(frame: pd.DataFrame, engine_ids: list[int], inputs: list[str], target: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -176,6 +223,11 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True); PRED_DIR.mkdir(parents=True, exist_ok=True)
     tf.config.threading.set_intra_op_parallelism_threads(4); tf.config.threading.set_inter_op_parallelism_threads(1); tf.config.experimental.enable_op_determinism()
     frame = load_fd001(); split = engine_split(frame); sensors = select_sensors(frame, split["train_engine_ids"])
+    provenance = run_provenance(
+        ROOT / "CODEX_IEEE_EXECUTION_PLAN.md",
+        OUT / "cmapss_fd001_split.json",
+        OUT / "cmapss_sensor_selection.csv",
+    )
     if args.prepare_only:
         print(f"Validated FD001; saved fixed split and selected sensors: {sensors}")
         return
@@ -206,14 +258,19 @@ def main() -> None:
                     row = {"Dataset": "NASA C-MAPSS FD001 (simulated)", "Configuration": config, "Target sensor": target,
                            "Model": model, "Seed": model_seed, "Input features": json.dumps(observed), "Lookback cycles": LOOKBACK,
                            "Forecast horizon cycles": HORIZON, "Train engines": len(split["train_engine_ids"]), "Validation engines": len(split["validation_engine_ids"]), "Test engines": len(split["test_engine_ids"]),
-                           "Train-only scaling": True, "Dataset SHA256": split["dataset_sha256"], "Unit": "native sensor units", **fit, **result}
+                           "Train engine IDs": json.dumps(split["train_engine_ids"]), "Validation engine IDs": json.dumps(split["validation_engine_ids"]), "Test engine IDs": json.dumps(split["test_engine_ids"]),
+                           "Train-only scaling": True, "Dataset SHA256": split["dataset_sha256"], "Unit": "native sensor units", **provenance, **fit, **result}
                     metrics_rows.append(row)
                     for horizon in range(HORIZON):
-                        horizon_rows.append({**{k: row[k] for k in ("Dataset", "Configuration", "Target sensor", "Model", "Seed", "Unit")}, "Horizon cycle": horizon + 1,
+                        horizon_rows.append({**{k: v for k, v in row.items() if k not in ("MAE", "RMSE", "R2")}, "Horizon cycle": horizon + 1,
                                              "MAE": float(mean_absolute_error(yte[:, horizon], prediction[:, horizon]))})
                     safe = f"{config}_{target}_{model.replace(' ', '_').replace('-', '')}_seed{model_seed}"
                     np.savez_compressed(PRED_DIR / f"{safe}.npz", truth=yte, prediction=prediction, unit_ids=test_units, target_start_cycles=test_origins,
-                                        configuration=config, target_sensor=target, model=model, seed=model_seed)
+                                        configuration=config, target_sensor=target, model=model, seed=model_seed,
+                                        dataset_sha256=split["dataset_sha256"], experiment_script_sha256=provenance["Experiment script SHA256"],
+                                        protocol_sha256=provenance["Protocol SHA256"], sensor_selection_sha256=provenance["Sensor selection SHA256"],
+                                        architecture_source_sha256=provenance["Architecture source SHA256"], model_parameters=fit["Parameter count"],
+                                        epochs_run=fit["Epochs run"], best_epoch=fit["Best epoch"], training_seconds=fit["Training seconds"])
                     pd.DataFrame(metrics_rows).to_csv(OUT / "cmapss_fd001_metrics.csv", index=False)
                     pd.DataFrame(horizon_rows).to_csv(OUT / "cmapss_fd001_horizon_metrics.csv", index=False)
     detailed = pd.DataFrame(metrics_rows)
@@ -227,13 +284,19 @@ def main() -> None:
                            "Target sensor": "MACRO_AVERAGE_NORMALIZED", "Model": model, "Seed": model_seed,
                            "Metric scale": "training-range-normalized across selected sensors; raw-unit MAE/RMSE not pooled",
                            "Normalized MAE": group["Normalized MAE"].mean(), "Normalized RMSE": group["Normalized RMSE"].mean(),
-                           "R2": group["R2"].mean(), "Selected sensor count": len(group)})
+                           "R2": group["R2"].mean(), "Selected sensor count": len(group),
+                           "Dataset SHA256": split["dataset_sha256"], "Unit": "training-range-normalized", **provenance})
     pd.concat([detailed, pd.DataFrame(macro_rows)], ignore_index=True, sort=False).to_csv(OUT / "cmapss_fd001_metrics.csv", index=False)
     horizon_detail = pd.DataFrame(horizon_rows)
     horizon_detail["Normalized MAE"] = horizon_detail.apply(lambda row: row["MAE"] / target_ranges[row["Target sensor"]], axis=1)
     macro_horizon = horizon_detail.groupby(["Configuration", "Model", "Seed", "Horizon cycle"], dropna=False)["Normalized MAE"].mean().reset_index()
     macro_horizon["Target sensor"] = "MACRO_AVERAGE_NORMALIZED"
     macro_horizon["Metric scale"] = "training-range-normalized across selected sensors"
+    macro_horizon["Dataset"] = "NASA C-MAPSS FD001 (simulated)"
+    macro_horizon["Dataset SHA256"] = split["dataset_sha256"]
+    macro_horizon["Unit"] = "training-range-normalized"
+    for key, value in provenance.items():
+        macro_horizon[key] = value
     pd.concat([horizon_detail, macro_horizon], ignore_index=True, sort=False).to_csv(OUT / "cmapss_fd001_horizon_metrics.csv", index=False)
     neural = detailed[detailed.Model.eq("Bi-LSTM")].groupby(["Configuration", "Target sensor"])[["MAE", "RMSE", "R2"]].agg(["mean", "std"]).reset_index()
     neural.columns = ["Configuration", "Target sensor", "MAE mean", "MAE std", "RMSE mean", "RMSE std", "R2 mean", "R2 std"]
@@ -243,4 +306,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-/
