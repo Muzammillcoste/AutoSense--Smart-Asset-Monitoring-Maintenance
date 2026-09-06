@@ -1,0 +1,25 @@
+{
+  "starting_commit": "4b0d64e0c6bd06f19f4c7131a8baac9fc44076fa",
+  "branch": "research-paper-v2",
+  "phase_a": {
+    "corrected_benchmark_preserved": true,
+    "required_files_verified": [
+      "research_v2/results/final_comparison.csv",
+      "research_v2/results/bilstm_metrics.csv",
+      "research_v2/results/bilstm_horizon_metrics.csv",
+      "research_v2/results/engine_temperature/test_predictions.npz",
+      "research_v2/results/engine_temperature/metadata.json",
+      "research_v2/results/tyre_pressure/test_predictions.npz",
+      "research_v2/results/tyre_pressure/metadata.json",
+      "research_v2/results/tyre_temperature/test_predictions.npz",
+      "research_v2/results/tyre_temperature/metadata.json",
+      "research_v2/REPORT_FOR_CHATGPT_REVIEW.md",
+      "research_v2/AUDIT.md"
+    ],
+    "checks": {
+      "test_protocol": "passed (4 tests)",
+      "verify_results": "passed; persisted predictions, metrics, split alignment, and model reloads verified"
+    },
+    "final_comparison_sha256": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174"
+  }
+}
