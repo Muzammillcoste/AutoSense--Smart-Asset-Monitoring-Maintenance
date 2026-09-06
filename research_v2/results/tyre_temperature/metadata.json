@@ -1,0 +1,50 @@
+{
+  "Protocol": "raw80_train68_validation12_test20_v1",
+  "Dataset": "tyre_temperature",
+  "Rows": 2921,
+  "Dataset path": "D:\\AutoSense---Smart-Asset-Monitoring-Maintenance\\FYP ML Training and Pipeline Code\\Tyre Temperature\\tyre_temp_2024.csv",
+  "SHA256": "451301b1fef1c683e844bffdec67cc93c607836b42ce1a344219b7b080379c3a",
+  "Sampling interval (h)": 3.0,
+  "Lookback (h)": 168,
+  "Forecast horizon (h)": 24,
+  "Lookback steps": 56,
+  "Horizon steps": 8,
+  "Unit": "\u00b0C",
+  "Train end row exclusive": 1985,
+  "Test start row": 2336,
+  "Train rows": 1985,
+  "Validation rows": 351,
+  "Test rows": 585,
+  "Train windows": 1922,
+  "Train first target": "2024-01-08 00:00:00",
+  "Train last target": "2024-09-05 00:00:00",
+  "Validation windows": 344,
+  "Validation first target": "2024-09-05 03:00:00",
+  "Validation last target": "2024-10-18 21:00:00",
+  "Test windows": 578,
+  "Test first target": "2024-10-19 00:00:00",
+  "Test last target": "2024-12-31 00:00:00",
+  "Model": "Bi-LSTM",
+  "Model source": "D:\\AutoSense---Smart-Asset-Monitoring-Maintenance\\research_v2\\results\\tyre_temperature\\model.keras",
+  "Retrained": true,
+  "Input shape": [
+    null,
+    56,
+    1
+  ],
+  "Output shape": [
+    null,
+    8
+  ],
+  "Features": [
+    "Tyre_Temperature_C"
+  ],
+  "Seed": 42,
+  "Max epochs": 20,
+  "Batch size": 64,
+  "Patience": 5,
+  "Shuffle": false,
+  "Training seconds": 177.0,
+  "Epochs run": 9,
+  "Best epoch": 4
+}

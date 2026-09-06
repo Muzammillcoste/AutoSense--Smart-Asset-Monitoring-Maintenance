@@ -1,64 +1,56 @@
-# Research Paper v2 — Reproducible Evaluation
+# Research V2: reproducible sensor forecasting
 
-This folder contains the experiment framework for the revised predictive-maintenance paper.
+This experiment evaluates multi-step sensor forecasts for threshold-based maintenance. It does not evaluate failure prediction, remaining useful life, operational downtime reduction, or real-fleet deployment.
 
-## Why this revision is necessary
+## Run from PowerShell
 
-The original notebooks mix sampling intervals and sometimes interpret a fixed number of samples as a fixed number of hours. For example, a 24-sample lag is 24 hours only for hourly data; it becomes 72 hours for 3-hour data and 120 hours for 5-hour data. The revised evaluation therefore derives the sampling interval from timestamps and defines all lookback/forecast windows in clock hours.
+From the repository root, using the existing Python 3.11 environment:
 
-The original model notebooks also report classification-style metrics such as accuracy, precision, and recall for continuous-value regression. The revised paper should instead report MAE, RMSE, and R².
-
-## Baselines
-
-`baseline_evaluation.py` evaluates three reproducible baselines on the synthetic 2024 datasets used in the project:
-
-- Persistence: repeat the latest observed value.
-- Seasonal naive: use the previous day's same-time pattern.
-- Random Forest: nonlinear autoregressive baseline trained only on past target values.
-
-All datasets use an 80/20 chronological split, a 7-day lookback, and a true 24-hour forecast horizon.
-
-## Run
-
-From the repository root:
-
-```bash
-python research_v2/baseline_evaluation.py
+```powershell
+.venv/Scripts/python.exe -m unittest discover -s research_v2 -p test_protocol.py -v
+.venv/Scripts/python.exe research_v2/verify_generators.py
+.venv/Scripts/python.exe research_v2/audit_uae_legacy.py
+.venv/Scripts/python.exe -u research_v2/audit_originals.py
+.venv/Scripts/python.exe -u research_v2/bilstm_evaluation.py
 ```
 
-Dependencies:
+`bilstm_evaluation.py` regenerates the baselines, trains all three models, saves predictions/models/scalers/history, and produces the final comparison. Each run overwrites its research results and invalidates prior completion tables/reports at startup. The report builder requires verification of the exact final comparison file by SHA256. Original notebooks and models are never modified. To run only the corrected baselines:
 
-```bash
-pip install numpy pandas scikit-learn
+```powershell
+.venv/Scripts/python.exe research_v2/baseline_evaluation.py
 ```
 
-The output is written to:
+Dependencies for reproducing this environment are in `requirements.txt`; no installation was needed for the recorded run. Full environment details are in `results/environment.json`. CPU training takes substantially longer than inference. Defaults are 20 maximum epochs, batch size 64, four intra-op threads and one inter-op thread. Flags: `--epochs`, `--batch-size`, `--threads`. Set budgets before viewing test results; changing them creates a different experiment.
 
-`research_v2/results/baseline_metrics.csv`
+## Corrected protocol
 
-## Paper changes after baseline results
+`protocol.py` supplies identical windows and masks to every model. For N raw rows, test starts at floor(0.8*N), and validation starts at floor(0.85*floor(0.8*N)). Training uses approximately the first 68%, validation the next 12%, and testing the final 20%. Random Forest and Bi-LSTM fit on the same first region. Random Forest settings are fixed, and it does not use validation for tuning or refitting. This sacrifices some fitting data to make training exposure equal.
 
-1. State clearly that the reported 2024 training/evaluation series are synthetic unless a real/public provenance can be documented.
-2. Remove the unsupported claim of 10–15% downtime reduction.
-3. Remove accuracy, precision, and recall from regression evaluation.
-4. Correct all lag/lookback/horizon descriptions to reflect actual sampling intervals.
-5. Compare Bi-LSTM against Persistence, Seasonal Naive, and Random Forest using MAE, RMSE, and R².
-6. Add a limitations section covering synthetic data, lack of real-fleet validation, and generalization risk.
-7. Present Salesforce/Swift as the deployment/action layer rather than evidence of predictive accuracy.
+A window belongs to a partition only when its entire target horizon lies inside that partition. Boundary-crossing target windows are discarded. Inputs may contain earlier observations, including observations from the test period once they are available at a later forecast origin. This is rolling-origin evaluation with fixed weights, not a single forecast made at the beginning of the test period. Within-test forecast windows overlap, so errors are dependent; no independent-sample significance claim is made.
 
-## Minimum result table for the paper
+The previous baseline split 80/20 **after** making overlapping windows. Its last training target window and first test target window shared 23 engine targets or 7 tyre targets. Those former baseline numbers must not be combined with the corrected experiment. The corrected test boundary is based on raw timestamps and differs from the former window-based boundary.
 
-| Target | Model | MAE | RMSE | R² |
-|---|---|---:|---:|---:|
-| Engine temperature | Persistence |  |  |  |
-| Engine temperature | Seasonal naive |  |  |  |
-| Engine temperature | Random Forest |  |  |  |
-| Engine temperature | Bi-LSTM |  |  |  |
-| Tyre pressure | Persistence |  |  |  |
-| Tyre pressure | Seasonal naive |  |  |  |
-| Tyre pressure | Random Forest |  |  |  |
-| Tyre pressure | Bi-LSTM |  |  |  |
-| Tyre temperature | Persistence |  |  |  |
-| Tyre temperature | Seasonal naive |  |  |  |
-| Tyre temperature | Random Forest |  |  |  |
-| Tyre temperature | Bi-LSTM |  |  |  |
+Inputs are historical target values only, for both learned models. This deliberately changes the original 11-feature setup and isolates a common univariate benchmark; conclusions apply to this configuration, not every possible engineered-feature Bi-LSTM. Persistence repeats the last observation; seasonal naive repeats the previous day. The Bi-LSTM uses the original family: bidirectional LSTM(128), batch normalization, dropout(.2), bidirectional LSTM(64), batch normalization, dropout(.3), LSTM(32), Dense(64, relu), dropout(.2), Dense(horizon). Both bidirectional layers operate solely inside the observed past window.
+
+MinMaxScaler fits only on raw fitting-region values. Training uses MSE/MAE, Adam, no shuffling, seed 42, deterministic TensorFlow operations and early stopping (validation loss, patience 5, best weights restored). No architecture or hyperparameter is selected against test scores. Reproducibility across other hardware/library versions is not guaranteed bit for bit.
+
+Timestamps must be ordered, unique, complete and regularly spaced. Invalid data are rejected instead of silently dropped, deduplicated or resampled. Engine has hourly cadence: 168 input steps and 24 output steps. Tyres have three-hour cadence: 56 input steps and 8 output steps. Every final MAE and RMSE is in degrees Celsius or PSI after inverse scaling; R2 is dimensionless. Aggregate metrics flatten all origin/horizon pairs, and horizon-wise metrics keep each lead separate.
+
+## Outputs
+
+- `results/final_comparison.csv`: all four models and three datasets, including split metadata.
+- `results/baseline_metrics.csv`, `results/bilstm_metrics.csv`, `results/bilstm_horizon_metrics.csv`.
+- `results/<dataset>/`: saved model, scaler parameters, test truth/predictions, forecast starting rows, training history, metadata and dataset SHA256.
+- `results/uae_legacy_audit.json`: direct reproduction of the older UAE engine result after in-memory Keras compatibility migration.
+- `results/legacy_model_audit.json`: separately reproduced original evaluations; **not** aligned benchmark results.
+- `results/notebook_evidence.json`: notebook source with zero-based cell references and stored text outputs.
+- `AUDIT.md`: interpretation and provenance limitations.
+- `REPORT_FOR_CHATGPT_REVIEW.md`: complete experiment report when the run finishes.
+
+Saved `scaler.npz` arrays implement `scaled = raw * scale + min`; invert with `(scaled - min) / scale`. `test_predictions.npz` stores rows in source CSV order. Reload `model.keras` with `tf.keras.models.load_model(path, compile=False)` and provide shape `(windows, lookback_steps, 1)`.
+
+## Data provenance
+
+All three datasets have local synthetic generators, including `Tyre Temperature/generating_data.ipynb`. `verify_generators.py` reproduces all timestamps and target values to floating-point precision (maximum difference below 1.5e-14). None is real operational aviation-fleet data. The 2024 files end at midnight on December 31 rather than covering that entire final day.
+
+Do not revise the paper until experiment results and the audit have been reviewed.

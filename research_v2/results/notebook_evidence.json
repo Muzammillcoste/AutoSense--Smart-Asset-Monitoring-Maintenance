@@ -1,0 +1,1278 @@
+[
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nfrom datetime import datetime, timedelta\nimport matplotlib.pyplot as plt\n\n# Set random seed for reproducibility\nnp.random.seed(42)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 1,
+    "source": "# Parameters for Karachi's climate\nBASE_TEMP = 85  # Base engine temperature in \u00b0C\nDAILY_VARIATION = 12  # Daily temperature variation\nYEARLY_VARIATION = 8  # Yearly temperature variation\nTREND = 0.018  # Slightly increased aging trend\nNOISE_LEVEL = 1.7  # Random noise level",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 2,
+    "source": "# Generate date range for 2024 (leap year)\nstart_date = datetime(2024, 1, 1)\nend_date = datetime(2024, 12, 31)\ndates = pd.date_range(start_date, end_date, freq='H')",
+    "text_outputs": [
+      "C:\\Users\\PMLS\\AppData\\Local\\Temp\\ipykernel_94360\\178974534.py:4: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  dates = pd.date_range(start_date, end_date, freq='H')\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 3,
+    "source": "df = pd.DataFrame(index=dates)\ndf['datetime'] = df.index",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 4,
+    "source": "# Yearly seasonality adjusted for leap year\ndef yearly_seasonality(date):\n    day_of_year = date.timetuple().tm_yday\n    return np.sin(2 * np.pi * day_of_year / 366) * YEARLY_VARIATION  # 366 for leap year\n\n# Daily seasonality (more intense afternoon heat)\ndef daily_seasonality(date):\n    hour = date.hour\n    return -np.cos(2 * np.pi * (hour - 14) / 24) * DAILY_VARIATION  # Peak at 2 PM\n\n# Weekly pattern updated for 2024 calendar\ndef weekly_pattern(date):\n    if date.weekday() < 4:  # Monday-Thursday\n        return 2.8\n    elif date.weekday() == 4:  # Friday\n        return 2.0  # Reduced traffic due to Friday prayers\n    else:  # Weekend\n        return -1.5\n\n# Random spikes with monsoon consideration\ndef random_spikes(n):\n    spikes = np.zeros(n)\n    for i in range(n):\n        if np.random.rand() < 0.005:\n            spikes[i] = np.random.uniform(5, 15)  # Heat spikes\n        elif np.random.rand() < 0.003:  # Cooling effects\n            spikes[i] = np.random.uniform(-8, -4)  # Monsoon cooling\n    return spikes",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 5,
+    "source": "# Generate components\nn = len(df)\ntime = np.arange(n)\n\n# Base temperature with yearly trend\nyearly_comp = np.array([yearly_seasonality(date) for date in df.index])\ndaily_comp = np.array([daily_seasonality(date) for date in df.index])\nweekly_comp = np.array([weekly_pattern(date) for date in df.index])\nspikes = random_spikes(n)\ntrend = TREND * time / 24  # Hourly trend\nnoise = np.random.normal(0, NOISE_LEVEL, n)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 6,
+    "source": "# Combine all components\ntemperature = (BASE_TEMP + yearly_comp + daily_comp + weekly_comp + \n              spikes + trend + noise)\n\n# Clip values to realistic range (70\u00b0C-125\u00b0C) with emergency overheat\ntemperature = np.clip(temperature, 70, 130)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 7,
+    "source": "# Add to dataframe\ndf['Engine_Temperature'] = temperature.round(1)\n\n# Add contextual columns\ndf['Hour'] = df.index.hour\ndf['DayOfWeek'] = df.index.dayofweek\ndf['Month'] = df.index.month\ndf['IsWeekend'] = df['DayOfWeek'].isin([5, 6]).astype(int)\ndf['IsRushHour'] = ((df['Hour'].between(7, 10)) | (df['Hour'].between(17, 21))).astype(int)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 8,
+    "source": "heat_wave_2024 = [datetime(2024, 5, d) for d in range(15, 25)] + \\\n                 [datetime(2024, 6, d) for d in range(5, 18)]\n\n# Monsoon cooling days\nmonsoon_days = [datetime(2024, 7, d) for d in range(10, 20)] + \\\n               [datetime(2024, 8, d) for d in range(5, 15)]\n\nfor date in heat_wave_2024:\n    df.loc[df.index.date == date.date(), 'Engine_Temperature'] += np.random.uniform(4, 9)\n\nfor date in monsoon_days:\n    df.loc[df.index.date == date.date(), 'Engine_Temperature'] += np.random.uniform(-6, -3)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 9,
+    "source": "df.head()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 10,
+    "source": "df.drop(columns=[\n\"Hour\",\n\"DayOfWeek\",\n\"Month\",\n\"IsWeekend\",\n\"IsRushHour\"], inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 11,
+    "source": "df.head()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 12,
+    "source": "# Reset index and save to CSV\ndf.reset_index(drop=True, inplace=True)\ndf.to_csv('karachi_2024_vehicle_temperature_data.csv', index=False)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 13,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(df['datetime'][:24*7], df['Engine_Temperature'][:24*7])\nplt.title('January 2024 Week of Synthetic Engine Temperature Data')\nplt.xlabel('DateTime')\nplt.ylabel('Engine Temperature (\u00b0C)')\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 14,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(df['datetime'], df['Engine_Temperature'], alpha=0.7)\nplt.title('2024 Full Year Temperature Pattern')\nplt.xlabel('DateTime')\nplt.ylabel('Engine Temperature (\u00b0C)')\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Generating Data.ipynb",
+    "cell_zero_based": 15,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nimport pickle\nfrom tensorflow.keras.models import load_model",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 1,
+    "source": "from tensorflow.keras.models import load_model\nimport tensorflow.keras.losses\n\ncustom_objects = {\"mse\": tensorflow.keras.losses.MeanSquaredError()}\n\nmodel = load_model('/content/Final_Temp_Prediction_Model.h5', custom_objects=custom_objects)",
+    "text_outputs": [
+      "WARNING:absl:Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 2,
+    "source": "with open('/content/scaler.pkl', 'rb') as f:\n    scaler = pickle.load(f)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 3,
+    "source": "import numpy as np\nimport pandas as pd\n\ndef generate_dummy_data():\n    date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")\n\n    day_hours = date_rng.hour\n    base_temp = 80 + 10 * np.sin(2 * np.pi * day_hours / 24)  # Daily cycle\n\n    weekly_trend = 2 * np.sin(2 * np.pi * date_rng.dayofweek / 7)\n\n    rush_hour_boost = np.where((7 <= day_hours) & (day_hours <= 9) | (17 <= day_hours) & (day_hours <= 19), 2, 0)\n\n    np.random.seed(42)\n    noise = np.random.normal(0, 1.5, 168)\n\n    engine_temp = base_temp + weekly_trend + rush_hour_boost + noise\n\n    df = pd.DataFrame({\"datetime\": date_rng, \"Engine_Temperature\": engine_temp})\n\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 4,
+    "source": "df_new = generate_dummy_data()\ndf_new.head()",
+    "text_outputs": [
+      "<ipython-input-20-6fa9db0ab844>:6: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 5,
+    "source": "df_new.describe()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 6,
+    "source": "# Load new dataset (make sure it has at least 168 hours of data)\ndf_new['datetime'] = pd.to_datetime(df_new['datetime'])\ndf_new.set_index('datetime', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 7,
+    "source": "# Feature Engineering\ndef create_features(df):\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek\n    df[\"Month\"] = df.index.month\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n\n    # Cyclical encoding\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour'] / 24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour'] / 24)\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month'] - 1) / 12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month'] - 1) / 12)\n\n    # Lag features\n    df['temp_lag_24h'] = df['Engine_Temperature'].shift(24)\n    df['temp_rolling_avg_3d'] = df['Engine_Temperature'].rolling(window=72).mean()\n\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n    df.dropna(inplace=True)\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 8,
+    "source": "df_new = create_features(df_new)\n\n# Select last 168 hours for prediction\nfeatures = ['Engine_Temperature', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'temp_lag_24h',\n            'temp_rolling_avg_3d']",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 9,
+    "source": "latest_data = df_new[features].iloc[-168:]  # Last 168 hours",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 10,
+    "source": "# Scale data using saved scaler\nlatest_scaled = scaler.transform(latest_data)\nlatest_scaled = np.expand_dims(latest_scaled, axis=0)  # Reshape for LSTM",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 11,
+    "source": "# Predict next 24 hours\npredictions_scaled = model.predict(latest_scaled)",
+    "text_outputs": [
+      "\u001b[1m1/1\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 80ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 12,
+    "source": "# Function to inverse scale predictions\ndef inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    n_samples, n_steps = scaled_predictions.shape\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n    dummy[:, feature_index] = scaled_predictions.flatten()\n\n    inverse_scaled = scaler.inverse_transform(dummy)\n\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 13,
+    "source": "# Convert predictions back to original temperature scale\npredictions = inverse_scale_predictions(predictions_scaled, scaler)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 14,
+    "source": "# Generate timestamps for the next 24 hours\nfuture_timestamps = pd.date_range(start=df_new.index[-1], periods=25, freq='H')[1:]",
+    "text_outputs": [
+      "<ipython-input-31-387e94803d43>:2: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  future_timestamps = pd.date_range(start=df_new.index[-1], periods=25, freq='H')[1:]\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 15,
+    "source": "# Create DataFrame with timestamps and predicted values\npredictions_df = pd.DataFrame({'datetime': future_timestamps, 'Predicted_Engine_Temperature': predictions.flatten()})\n\nprint(predictions_df)",
+    "text_outputs": [
+      "              datetime  Predicted_Engine_Temperature\n0  2025-03-08 00:00:00                     91.418907\n1  2025-03-08 01:00:00                     91.797157\n2  2025-03-08 02:00:00                     91.058405\n3  2025-03-08 03:00:00                     92.075831\n4  2025-03-08 04:00:00                     90.729258\n5  2025-03-08 05:00:00                     88.554353\n6  2025-03-08 06:00:00                     86.436590\n7  2025-03-08 07:00:00                     84.750589\n8  2025-03-08 08:00:00                     81.969901\n9  2025-03-08 09:00:00                     77.624384\n10 2025-03-08 10:00:00                     75.164896\n11 2025-03-08 11:00:00                     73.684337\n12 2025-03-08 12:00:00                     72.530893\n13 2025-03-08 13:00:00                     69.837621\n14 2025-03-08 14:00:00                     70.790301\n15 2025-03-08 15:00:00                     70.226385\n16 2025-03-08 16:00:00                     70.715384\n17 2025-03-08 17:00:00                     71.873753\n18 2025-03-08 18:00:00                     74.701411\n19 2025-03-08 19:00:00                     76.896796\n20 2025-03-08 20:00:00                     80.505242\n21 2025-03-08 21:00:00                     82.979876\n22 2025-03-08 22:00:00                     84.675627\n23 2025-03-08 23:00:00                     86.920434\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 16,
+    "source": "import matplotlib.pyplot as plt\nplt.figure(figsize=(12, 6))\nplt.plot(df_new.index[-168:], df_new['Engine_Temperature'].iloc[-168:], label=\"Actual Last 168 Hours\", color=\"blue\")\nplt.plot(predictions_df['datetime'], predictions_df['Predicted_Engine_Temperature'], label=\"Predicted Next 24 Hours\", color=\"red\", linestyle='dashed')\nplt.xlabel(\"Time\")\nplt.ylabel(\"Engine Temperature\")\nplt.title(\"Actual vs Predicted Engine Temperature\")\nplt.legend()\nplt.xticks(rotation=45)\nplt.grid()\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Testing_Pipeline.ipynb",
+    "cell_zero_based": 17,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nfrom sklearn.preprocessing import MinMaxScaler\nfrom sklearn.model_selection import train_test_split\nfrom tensorflow.keras.models import Sequential\nfrom tensorflow.keras.layers import LSTM, Dense, Dropout\nimport matplotlib.pyplot as plt",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 1,
+    "source": "df = pd.read_csv('vehicle_engine_temperature_UAE_Vehicle0018.csv')\ndf['datetime'] = pd.to_datetime(df['Timestamp'])\ndf.set_index('datetime', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 2,
+    "source": "df.drop(['Timestamp'], axis=1, inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 3,
+    "source": "def create_features(df):\n    # Cyclical encoding for temporal features\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour']/24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour']/24)\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek']/7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek']/7)\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month']-1)/12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month']-1)/12)\n    \n    # Lag features\n    df['temp_lag_24h'] = df['Engine_Temperature_C'].shift(24)\n    df['temp_rolling_avg_3d'] = df['Engine_Temperature_C'].rolling(window=72).mean()\n    \n    # Drop original columns and NAs\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n    df.dropna(inplace=True)\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 4,
+    "source": "df[\"Hour\"] = df.index.hour\ndf[\"DayOfWeek\"] = df.index.dayofweek\ndf[\"Month\"] = df.index.month\ndf[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\ndf[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 5,
+    "source": "df = create_features(df)\n\n# Define features and target\nfeatures = ['Engine_Temperature_C', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'temp_lag_24h',\n            'temp_rolling_avg_3d']\ntarget = 'Engine_Temperature_C'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 6,
+    "source": "train_size = int(len(df) * 0.8)\ntrain_df = df.iloc[:train_size]\ntest_df = df.iloc[train_size:]",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 7,
+    "source": "scaler = MinMaxScaler()\ntrain_scaled = scaler.fit_transform(train_df[features])\ntest_scaled = scaler.transform(test_df[features])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 8,
+    "source": "def create_sequences(data, window_size):\n    X, y = [], []\n    for i in range(len(data)-window_size-24):  # Predict 24h ahead\n        X.append(data[i:i+window_size])\n        y.append(data[i+window_size:i+window_size+24, 0])  # Next 24 temperatures\n    return np.array(X), np.array(y)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 9,
+    "source": "window_size = 40 # 1 week lookback\nX_train, y_train = create_sequences(train_scaled, window_size)\nX_test, y_test = create_sequences(test_scaled, window_size)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 10,
+    "source": "from tensorflow.keras.layers import Bidirectional, BatchNormalization\n\nmodel = Sequential([\n    # Bidirectional LSTM to capture forward/backward patterns\n    Bidirectional(LSTM(128, return_sequences=True), input_shape=(window_size, len(features))),\n    BatchNormalization(),  # Stabilizes training\n    Dropout(0.2),  # Slightly higher dropout for regularization\n\n    # Stacked LSTM with reduced units\n    Bidirectional(LSTM(64, return_sequences=True)),\n    BatchNormalization(),\n    Dropout(0.3),\n\n    # Final LSTM layer\n    LSTM(32),\n    \n    # Intermediate dense layer for non-linear mapping\n    Dense(64, activation='relu'),\n    Dropout(0.2),\n    \n    # Output layer for 24-hour prediction\n    Dense(24)\n])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 11,
+    "source": "import warnings\nwarnings.filterwarnings('ignore')  # Suppress warnings",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 12,
+    "source": "import tensorflow as tf",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 13,
+    "source": "model.compile(optimizer='adam', loss='mse', metrics=['mae',\n                                                     'accuracy', \n                      tf.keras.metrics.Precision(name='precision'),\n                      tf.keras.metrics.Recall(name='recall')])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 14,
+    "source": "# from tensorflow.keras.callbacks import EarlyStopping\n\n# # Define EarlyStopping callback\n# early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)\n\n# Train the model with early stopping\nhistory = model.fit(X_train, y_train,\n                    epochs=50,\n                    batch_size=32,\n                    validation_split=0.1,\n                    verbose=1)",
+    "text_outputs": [
+      "Epoch 1/50\n132/132 [==============================] - 17s 61ms/step - loss: 0.0317 - mae: 0.1302 - accuracy: 0.0411 - precision: 1.0000 - recall: 0.0697 - val_loss: 0.0235 - val_mae: 0.1113 - val_accuracy: 0.0449 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 2/50\n132/132 [==============================] - 7s 50ms/step - loss: 0.0180 - mae: 0.0961 - accuracy: 0.0373 - precision: 1.0000 - recall: 0.0765 - val_loss: 0.0193 - val_mae: 0.0940 - val_accuracy: 0.0449 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 3/50\n132/132 [==============================] - 7s 52ms/step - loss: 0.0151 - mae: 0.0834 - accuracy: 0.0394 - precision: 1.0000 - recall: 0.0781 - val_loss: 0.0169 - val_mae: 0.0786 - val_accuracy: 0.0427 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 4/50\n132/132 [==============================] - 8s 57ms/step - loss: 0.0136 - mae: 0.0767 - accuracy: 0.0399 - precision: 1.0000 - recall: 0.0764 - val_loss: 0.0157 - val_mae: 0.0727 - val_accuracy: 0.0427 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 5/50\n132/132 [==============================] - 7s 52ms/step - loss: 0.0127 - mae: 0.0725 - accuracy: 0.0394 - precision: 1.0000 - recall: 0.0758 - val_loss: 0.0144 - val_mae: 0.0677 - val_accuracy: 0.0385 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 6/50\n132/132 [==============================] - 8s 57ms/step - loss: 0.0120 - mae: 0.0693 - accuracy: 0.0416 - precision: 1.0000 - recall: 0.0767 - val_loss: 0.0143 - val_mae: 0.0631 - val_accuracy: 0.0406 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 7/50\n132/132 [==============================] - 7s 56ms/step - loss: 0.0116 - mae: 0.0671 - accuracy: 0.0435 - precision: 1.0000 - recall: 0.0775 - val_loss: 0.0140 - val_mae: 0.0595 - val_accuracy: 0.0427 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 8/50\n132/132 [==============================] - 7s 56ms/step - loss: 0.0111 - mae: 0.0642 - accuracy: 0.0513 - precision: 1.0000 - recall: 0.0746 - val_loss: 0.0137 - val_mae: 0.0615 - val_accuracy: 0.0406 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 9/50\n132/132 [==============================] - 8s 62ms/step - loss: 0.0108 - mae: 0.0627 - accuracy: 0.0551 - precision: 1.0000 - recall: 0.0765 - val_loss: 0.0135 - val_mae: 0.0602 - val_accuracy: 0.0427 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 10/50\n132/132 [==============================] - 9s 68ms/step - loss: 0.0106 - mae: 0.0611 - accuracy: 0.0544 - precision: 1.0000 - recall: 0.0746 - val_loss: 0.0133 - val_mae: 0.0586 - val_accuracy: 0.0513 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 11/50\n132/132 [==============================] - 9s 68ms/step - loss: 0.0103 - mae: 0.0597 - accuracy: 0.0617 - precision: 1.0000 - recall: 0.0753 - val_loss: 0.0131 - val_mae: 0.0591 - val_accuracy: 0.0577 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 12/50\n132/132 [==============================] - 9s 71ms/step - loss: 0.0101 - mae: 0.0583 - accuracy: 0.0727 - precision: 1.0000 - recall: 0.0737 - val_loss: 0.0131 - val_mae: 0.0577 - val_accuracy: 0.0620 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 13/50\n132/132 [==============================] - 9s 68ms/step - loss: 0.0100 - mae: 0.0580 - accuracy: 0.0774 - precision: 1.0000 - recall: 0.0742 - val_loss: 0.0130 - val_mae: 0.0576 - val_accuracy: 0.0577 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 14/50\n132/132 [==============================] - 10s 76ms/step - loss: 0.0099 - mae: 0.0567 - accuracy: 0.0810 - precision: 1.0000 - recall: 0.0735 - val_loss: 0.0130 - val_mae: 0.0561 - val_accuracy: 0.0620 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 15/50\n132/132 [==============================] - 9s 70ms/step - loss: 0.0098 - mae: 0.0563 - accuracy: 0.0781 - precision: 1.0000 - recall: 0.0741 - val_loss: 0.0129 - val_mae: 0.0579 - val_accuracy: 0.0641 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 16/50\n132/132 [==============================] - 9s 67ms/step - loss: 0.0097 - mae: 0.0558 - accuracy: 0.0845 - precision: 1.0000 - recall: 0.0732 - val_loss: 0.0129 - val_mae: 0.0568 - val_accuracy: 0.0705 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 17/50\n132/132 [==============================] - 9s 69ms/step - loss: 0.0097 - mae: 0.0552 - accuracy: 0.0955 - precision: 1.0000 - recall: 0.0725 - val_loss: 0.0130 - val_mae: 0.0572 - val_accuracy: 0.0833 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 18/50\n132/132 [==============================] - 9s 72ms/step - loss: 0.0096 - mae: 0.0549 - accuracy: 0.0898 - precision: 1.0000 - recall: 0.0749 - val_loss: 0.0130 - val_mae: 0.0556 - val_accuracy: 0.1004 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 19/50\n132/132 [==============================] - 9s 69ms/step - loss: 0.0095 - mae: 0.0545 - accuracy: 0.0948 - precision: 1.0000 - recall: 0.0709 - val_loss: 0.0129 - val_mae: 0.0566 - val_accuracy: 0.0598 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 20/50\n132/132 [==============================] - 9s 69ms/step - loss: 0.0095 - mae: 0.0541 - accuracy: 0.0940 - precision: 1.0000 - recall: 0.0728 - val_loss: 0.0129 - val_mae: 0.0560 - val_accuracy: 0.0769 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 21/50\n132/132 [==============================] - 9s 69ms/step - loss: 0.0095 - mae: 0.0544 - accuracy: 0.1000 - precision: 1.0000 - recall: 0.0733 - val_loss: 0.0129 - val_mae: 0.0553 - val_accuracy: 0.0769 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 22/50\n132/132 [==============================] - 9s 70ms/step - loss: 0.0094 - mae: 0.0538 - accuracy: 0.1064 - precision: 1.0000 - recall: 0.0744 - val_loss: 0.0129 - val_mae: 0.0544 - val_accuracy: 0.0684 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 23/50\n132/132 [==============================] - 10s 73ms/step - loss: 0.0094 - mae: 0.0535 - accuracy: 0.1050 - precision: 1.0000 - recall: 0.0728 - val_loss: 0.0130 - val_mae: 0.0555 - val_accuracy: 0.0577 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 24/50\n132/132 [==============================] - 9s 66ms/step - loss: 0.0094 - mae: 0.0535 - accuracy: 0.1024 - precision: 1.0000 - recall: 0.0730 - val_loss: 0.0129 - val_mae: 0.0572 - val_accuracy: 0.0684 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 25/50\n132/132 [==============================] - 9s 68ms/step - loss: 0.0093 - mae: 0.0531 - accuracy: 0.1054 - precision: 1.0000 - recall: 0.0716 - val_loss: 0.0129 - val_mae: 0.0555 - val_accuracy: 0.0769 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 26/50\n132/132 [==============================] - 9s 70ms/step - loss: 0.0093 - mae: 0.0532 - accuracy: 0.1019 - precision: 1.0000 - recall: 0.0736 - val_loss: 0.0130 - val_mae: 0.0539 - val_accuracy: 0.0598 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 27/50\n132/132 [==============================] - 10s 79ms/step - loss: 0.0093 - mae: 0.0528 - accuracy: 0.1102 - precision: 1.0000 - recall: 0.0733 - val_loss: 0.0129 - val_mae: 0.0559 - val_accuracy: 0.0427 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 28/50\n132/132 [==============================] - 11s 80ms/step - loss: 0.0092 - mae: 0.0527 - accuracy: 0.1071 - precision: 1.0000 - recall: 0.0731 - val_loss: 0.0129 - val_mae: 0.0550 - val_accuracy: 0.0726 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 29/50\n132/132 [==============================] - 8s 62ms/step - loss: 0.0092 - mae: 0.0523 - accuracy: 0.1062 - precision: 1.0000 - recall: 0.0729 - val_loss: 0.0129 - val_mae: 0.0553 - val_accuracy: 0.0705 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 30/50\n132/132 [==============================] - 8s 58ms/step - loss: 0.0092 - mae: 0.0524 - accuracy: 0.1073 - precision: 1.0000 - recall: 0.0745 - val_loss: 0.0129 - val_mae: 0.0543 - val_accuracy: 0.0812 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 31/50\n132/132 [==============================] - 8s 60ms/step - loss: 0.0092 - mae: 0.0524 - accuracy: 0.1104 - precision: 1.0000 - recall: 0.0730 - val_loss: 0.0129 - val_mae: 0.0549 - val_accuracy: 0.0641 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 32/50\n132/132 [==============================] - 9s 66ms/step - loss: 0.0092 - mae: 0.0522 - accuracy: 0.1016 - precision: 1.0000 - recall: 0.0744 - val_loss: 0.0129 - val_mae: 0.0556 - val_accuracy: 0.0726 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 33/50\n132/132 [==============================] - 9s 66ms/step - loss: 0.0092 - mae: 0.0523 - accuracy: 0.1194 - precision: 1.0000 - recall: 0.0730 - val_loss: 0.0129 - val_mae: 0.0546 - val_accuracy: 0.0748 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 34/50\n132/132 [==============================] - 7s 55ms/step - loss: 0.0091 - mae: 0.0520 - accuracy: 0.1078 - precision: 1.0000 - recall: 0.0739 - val_loss: 0.0130 - val_mae: 0.0533 - val_accuracy: 0.0769 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 35/50\n132/132 [==============================] - 7s 53ms/step - loss: 0.0091 - mae: 0.0521 - accuracy: 0.1116 - precision: 1.0000 - recall: 0.0728 - val_loss: 0.0129 - val_mae: 0.0548 - val_accuracy: 0.0812 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 36/50\n132/132 [==============================] - 7s 53ms/step - loss: 0.0091 - mae: 0.0517 - accuracy: 0.1156 - precision: 1.0000 - recall: 0.0737 - val_loss: 0.0129 - val_mae: 0.0549 - val_accuracy: 0.0726 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 37/50\n132/132 [==============================] - 7s 53ms/step - loss: 0.0090 - mae: 0.0517 - accuracy: 0.1168 - precision: 1.0000 - recall: 0.0741 - val_loss: 0.0129 - val_mae: 0.0540 - val_accuracy: 0.0855 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 38/50\n132/132 [==============================] - 7s 53ms/step - loss: 0.0090 - mae: 0.0515 - accuracy: 0.1173 - precision: 1.0000 - recall: 0.0736 - val_loss: 0.0129 - val_mae: 0.0533 - val_accuracy: 0.0726 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 39/50\n132/132 [==============================] - 7s 52ms/step - loss: 0.0089 - mae: 0.0516 - accuracy: 0.1152 - precision: 1.0000 - recall: 0.0745 - val_loss: 0.0129 - val_mae: 0.0530 - val_accuracy: 0.0940 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 40/50\n132/132 [==============================] - 7s 53ms/step - loss: 0.0089 - mae: 0.0514 - accuracy: 0.1092 - precision: 1.0000 - recall: 0.0736 - val_loss: 0.0129 - val_mae: 0.0555 - val_accuracy: 0.1004 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 41/50\n132/132 [==============================] - 7s 55ms/step - loss: 0.0089 - mae: 0.0515 - accuracy: 0.1209 - precision: 1.0000 - recall: 0.0763 - val_loss: 0.0131 - val_mae: 0.0549 - val_accuracy: 0.0726 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 42/50\n132/132 [==============================] - 7s 52ms/step - loss: 0.0088 - mae: 0.0512 - accuracy: 0.1218 - precision: 1.0000 - recall: 0.0729 - val_loss: 0.0130 - val_mae: 0.0550 - val_accuracy: 0.0726 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 43/50\n132/132 [==============================] - 7s 56ms/step - loss: 0.0088 - mae: 0.0513 - accuracy: 0.1140 - precision: 1.0000 - recall: 0.0744 - val_loss: 0.0129 - val_mae: 0.0532 - val_accuracy: 0.0748 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 44/50\n132/132 [==============================] - 8s 58ms/step - loss: 0.0087 - mae: 0.0508 - accuracy: 0.1140 - precision: 1.0000 - recall: 0.0754 - val_loss: 0.0131 - val_mae: 0.0554 - val_accuracy: 0.0962 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 45/50\n132/132 [==============================] - 8s 61ms/step - loss: 0.0088 - mae: 0.0510 - accuracy: 0.1166 - precision: 1.0000 - recall: 0.0762 - val_loss: 0.0130 - val_mae: 0.0541 - val_accuracy: 0.0876 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 46/50\n132/132 [==============================] - 8s 59ms/step - loss: 0.0088 - mae: 0.0515 - accuracy: 0.1213 - precision: 1.0000 - recall: 0.0727 - val_loss: 0.0131 - val_mae: 0.0559 - val_accuracy: 0.0833 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 47/50\n132/132 [==============================] - 8s 58ms/step - loss: 0.0088 - mae: 0.0513 - accuracy: 0.1154 - precision: 1.0000 - recall: 0.0734 - val_loss: 0.0129 - val_mae: 0.0542 - val_accuracy: 0.0855 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 48/50\n132/132 [==============================] - 8s 59ms/step - loss: 0.0088 - mae: 0.0516 - accuracy: 0.1221 - precision: 1.0000 - recall: 0.0733 - val_loss: 0.0129 - val_mae: 0.0558 - val_accuracy: 0.0748 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 49/50\n132/132 [==============================] - 8s 58ms/step - loss: 0.0087 - mae: 0.0512 - accuracy: 0.1308 - precision: 1.0000 - recall: 0.0758 - val_loss: 0.0131 - val_mae: 0.0560 - val_accuracy: 0.0641 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\nEpoch 50/50\n132/132 [==============================] - 7s 57ms/step - loss: 0.0086 - mae: 0.0508 - accuracy: 0.1247 - precision: 1.0000 - recall: 0.0750 - val_loss: 0.0131 - val_mae: 0.0547 - val_accuracy: 0.0556 - val_precision: 0.0000e+00 - val_recall: 0.0000e+00\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 15,
+    "source": "a = model.evaluate(X_test, y_test)\nprint(a)\nprint(f'Test Loss: {a[0]:.4f}, Test MAE: {a[1]:.4f}')",
+    "text_outputs": [
+      "36/36 [==============================] - 1s 26ms/step - loss: 0.0499 - mae: 0.1795 - accuracy: 0.0437 - precision: 0.0000e+00 - recall: 0.0000e+00\n[0.049922630190849304, 0.1794579178094864, 0.04367201402783394, 0.0, 0.0]\nTest Loss: 0.0499, Test MAE: 0.1795\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 16,
+    "source": "def inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    \"\"\"\n    Inverse scale predictions for multi-step output.\n    \n    Args:\n        scaled_predictions: Array of shape (n_samples, n_steps)\n        scaler: Fitted MinMaxScaler object\n        feature_index: Index of the target feature in the original data\n    \n    Returns:\n        Array of shape (n_samples, n_steps) with inverse-scaled predictions\n    \"\"\"\n    # Get the number of samples and steps\n    n_samples, n_steps = scaled_predictions.shape\n    \n    # Create a dummy array with the same shape as the original data\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n    \n    # Fill the target feature column with the predictions\n    dummy[:, feature_index] = scaled_predictions.flatten()\n    \n    # Inverse transform the dummy array\n    inverse_scaled = scaler.inverse_transform(dummy)\n    \n    # Reshape back to (n_samples, n_steps)\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 17,
+    "source": "# Make predictions\ntest_predictions = model.predict(X_test[:1])  # Predict first test sample\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get the corresponding timestamps for the predictions\nprediction_timestamps = test_df.index[window_size:window_size+24]",
+    "text_outputs": [
+      "1/1 [==============================] - 3s 3s/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 18,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(test_df.index[window_size:window_size+24], test_df['Engine_Temperature_C'].iloc[window_size:window_size+24], label='Actual')\nplt.plot(test_df.index[window_size:window_size+24], test_predictions.flatten(), label='Predicted')  # Flatten predictions\nplt.title('24-Hour Temperature Prediction vs Actual')\nplt.xlabel('Datetime')\nplt.ylabel('Engine Temperature (\u00b0C)')\nplt.legend()\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 19,
+    "source": "# Function to generate predictions for a given period\ndef predict_for_period(model, scaler, df, start_index, period_days, window_size, features):\n    \"\"\"\n    Generate predictions for a specific period.\n    \n    Args:\n        model: Trained LSTM model\n        scaler: Fitted MinMaxScaler\n        df: DataFrame containing the data\n        start_index: Index to start predictions from\n        period_days: Number of days to predict\n        window_size: Lookback window size\n        features: List of feature names\n    \n    Returns:\n        A tuple of (timestamps, actual_values, predicted_values)\n    \"\"\"\n    # Calculate the number of hours in the period\n    period_hours = period_days * 24\n    \n    # Initialize lists to store predictions and actual values\n    predictions = []\n    actual_values = df['Engine_Temperature_C'].iloc[start_index:start_index + period_hours].values\n    \n    # Iterate through the period and make predictions\n    for i in range(period_hours):\n        # Get the input sequence\n        input_seq = df[features].iloc[start_index + i:start_index + i + window_size].values\n        input_seq_scaled = scaler.transform(input_seq)\n        input_seq_scaled = np.expand_dims(input_seq_scaled, axis=0)  # Add batch dimension\n        \n        # Predict the next 24 hours\n        pred = model.predict(input_seq_scaled,verbose=0)\n        pred = inverse_scale_predictions(pred, scaler)  # Inverse scale predictions\n        predictions.append(pred[0, 0])  # Append the first predicted value\n    \n    # Get timestamps for the period\n    timestamps = df.index[start_index:start_index + period_hours]\n    \n    return timestamps, actual_values, np.array(predictions)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 20,
+    "source": "# Function to plot predictions vs actual values\ndef plot_predictions(timestamps, actual_values, predicted_values, title):\n    \"\"\"\n    Plot actual vs predicted values.\n    \n    Args:\n        timestamps: Timestamps for the x-axis\n        actual_values: Actual temperature values\n        predicted_values: Predicted temperature values\n        title: Plot title\n    \"\"\"\n    plt.figure(figsize=(15, 6))\n    plt.plot(timestamps, actual_values, label='Actual', color='blue')\n    plt.plot(timestamps, predicted_values, label='Predicted', color='red', linestyle='--')\n    plt.title(title)\n    plt.xlabel('Datetime')\n    plt.ylabel('Engine Temperature (\u00b0C)')\n    plt.legend()\n    plt.grid(True)\n    plt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 21,
+    "source": "# Example: Predict for 1 month (30 days) from a specific start index\nstart_index = 5000  # Example start index (can be from train or test set)\nperiod_days = 30  # Predict for 30 days (1 month)\ntimestamps, actual_values, predicted_values = predict_for_period(\n    model, scaler, df, start_index, period_days, window_size, features\n)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 22,
+    "source": "# Plot the results\nplot_predictions(timestamps, actual_values, predicted_values, title='1-Month Engine Temperature Prediction')",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 23,
+    "source": "# Make predictions\ntest_predictions = model.predict(X_test[:5])  # Predict first test sample\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get the corresponding timestamps for the predictions\nprediction_timestamps = test_df.index[window_size:window_size+24]",
+    "text_outputs": [
+      "1/1 [==============================] - 0s 65ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 24,
+    "source": "plot_predictions(timestamps, actual_values, predicted_values, title='2-Month Engine Temperature Prediction')",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 25,
+    "source": "# Make predictions for 5 days (120 hours)\ntest_predictions = model.predict(X_test[:5], verbose=0)  # Predict first 5 test samples\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get timestamps and flatten predictions\nprediction_timestamps = test_df.index[window_size:window_size+120]\ntest_predictions_flat = test_predictions.flatten()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 26,
+    "source": "# Plot results\nplt.figure(figsize=(15, 6))\nplt.plot(prediction_timestamps,\n         test_df['Engine_Temperature_C'].iloc[window_size:window_size+120], \n         label='Actual')\nplt.plot(prediction_timestamps, \n         test_predictions_flat, \n         label='Predicted',\n         linestyle='--')\nplt.title('5-Day Engine Temperature Prediction')\nplt.xlabel('Datetime')\nplt.ylabel('Engine Temperature (\u00b0C)')\nplt.legend()\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 27,
+    "source": "model.save(\"final_model.h5\") ",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM.ipynb",
+    "cell_zero_based": 28,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nfrom sklearn.preprocessing import MinMaxScaler\nfrom sklearn.model_selection import train_test_split\nfrom tensorflow.keras.models import Sequential\nfrom tensorflow.keras.layers import LSTM, Dense, Dropout\nimport matplotlib.pyplot as plt",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 1,
+    "source": "df = pd.read_csv('/content/sample_data/karachi_2024_vehicle_temperature_data.csv')\ndf['datetime'] = pd.to_datetime(df['datetime'])\ndf.set_index('datetime', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 2,
+    "source": "def create_features(df):\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek\n    df[\"Month\"] = df.index.month\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n    # Cyclical encoding for temporal features\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour']/24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour']/24)\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek']/7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek']/7)\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month']-1)/12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month']-1)/12)\n\n    # Lag features\n    df['temp_lag_24h'] = df['Engine_Temperature'].shift(24)\n    df['temp_rolling_avg_3d'] = df['Engine_Temperature'].rolling(window=72).mean()\n\n    # Drop original columns and NAs\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n    df.dropna(inplace=True)\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 3,
+    "source": "df = create_features(df)\n\n# Define features and target\nfeatures = ['Engine_Temperature', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'temp_lag_24h',\n            'temp_rolling_avg_3d']\ntarget = 'Engine_Temperature'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 4,
+    "source": "train_size = int(len(df) * 0.8)\ntrain_df = df.iloc[:train_size]\ntest_df = df.iloc[train_size:]",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 5,
+    "source": "scaler = MinMaxScaler()\ntrain_scaled = scaler.fit_transform(train_df[features])\ntest_scaled = scaler.transform(test_df[features])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 6,
+    "source": "def create_sequences(data, window_size):\n    X, y = [], []\n    for i in range(len(data)-window_size-24):  # Predict 24h ahead\n        X.append(data[i:i+window_size])\n        y.append(data[i+window_size:i+window_size+24, 0])  # Next 24 temperatures\n    return np.array(X), np.array(y)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 7,
+    "source": "window_size = 168  # 1 week lookback\nX_train, y_train = create_sequences(train_scaled, window_size)\nX_test, y_test = create_sequences(test_scaled, window_size)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 8,
+    "source": "from tensorflow.keras.layers import Bidirectional, BatchNormalization\n\nmodel = Sequential([\n    # Bidirectional LSTM to capture forward/backward patterns\n    Bidirectional(LSTM(128, return_sequences=True), input_shape=(window_size, len(features))),\n    BatchNormalization(),  # Stabilizes training\n    Dropout(0.2),  # Slightly higher dropout for regularization\n\n    # Stacked LSTM with reduced units\n    Bidirectional(LSTM(64, return_sequences=True)),\n    BatchNormalization(),\n    Dropout(0.3),\n\n    # Final LSTM layer\n    LSTM(32),\n\n    # Intermediate dense layer for non-linear mapping\n    Dense(64, activation='relu'),\n    Dropout(0.2),\n\n    # Output layer for 24-hour prediction\n    Dense(24)\n])",
+    "text_outputs": [
+      "/usr/local/lib/python3.11/dist-packages/keras/src/layers/rnn/bidirectional.py:107: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.\n  super().__init__(**kwargs)\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 9,
+    "source": "model.compile(optimizer='adam', loss='mse', metrics=['mae'])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 10,
+    "source": "from tensorflow.keras.callbacks import EarlyStopping\n\n# Define EarlyStopping callback\nearly_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)\n\n# Train the model with early stopping\nhistory = model.fit(X_train, y_train,\n                    epochs=50,\n                    batch_size=32,\n                    validation_split=0.1,\n                    verbose=1,\n                    callbacks=[early_stopping])",
+    "text_outputs": [
+      "Epoch 1/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m16s\u001b[0m 41ms/step - loss: 0.0948 - mae: 0.2296 - val_loss: 0.0134 - val_mae: 0.0958\nEpoch 2/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m17s\u001b[0m 38ms/step - loss: 0.0149 - mae: 0.0952 - val_loss: 0.0044 - val_mae: 0.0548\nEpoch 3/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m7s\u001b[0m 35ms/step - loss: 0.0109 - mae: 0.0816 - val_loss: 0.0025 - val_mae: 0.0406\nEpoch 4/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 36ms/step - loss: 0.0084 - mae: 0.0711 - val_loss: 0.0029 - val_mae: 0.0429\nEpoch 5/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m11s\u001b[0m 39ms/step - loss: 0.0074 - mae: 0.0669 - val_loss: 0.0024 - val_mae: 0.0386\nEpoch 6/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 36ms/step - loss: 0.0064 - mae: 0.0617 - val_loss: 0.0021 - val_mae: 0.0365\nEpoch 7/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m11s\u001b[0m 37ms/step - loss: 0.0059 - mae: 0.0594 - val_loss: 0.0022 - val_mae: 0.0374\nEpoch 8/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 38ms/step - loss: 0.0054 - mae: 0.0571 - val_loss: 0.0020 - val_mae: 0.0349\nEpoch 9/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 39ms/step - loss: 0.0051 - mae: 0.0553 - val_loss: 0.0017 - val_mae: 0.0323\nEpoch 10/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m11s\u001b[0m 43ms/step - loss: 0.0046 - mae: 0.0525 - val_loss: 0.0017 - val_mae: 0.0327\nEpoch 11/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 50ms/step - loss: 0.0046 - mae: 0.0527 - val_loss: 0.0018 - val_mae: 0.0332\nEpoch 12/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m8s\u001b[0m 37ms/step - loss: 0.0043 - mae: 0.0510 - val_loss: 0.0017 - val_mae: 0.0329\nEpoch 13/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m7s\u001b[0m 38ms/step - loss: 0.0042 - mae: 0.0502 - val_loss: 0.0018 - val_mae: 0.0336\nEpoch 14/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 38ms/step - loss: 0.0039 - mae: 0.0483 - val_loss: 0.0016 - val_mae: 0.0318\nEpoch 15/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 36ms/step - loss: 0.0039 - mae: 0.0482 - val_loss: 0.0016 - val_mae: 0.0319\nEpoch 16/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 36ms/step - loss: 0.0038 - mae: 0.0474 - val_loss: 0.0014 - val_mae: 0.0299\nEpoch 17/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m7s\u001b[0m 37ms/step - loss: 0.0036 - mae: 0.0465 - val_loss: 0.0016 - val_mae: 0.0319\nEpoch 18/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 39ms/step - loss: 0.0037 - mae: 0.0477 - val_loss: 0.0017 - val_mae: 0.0319\nEpoch 19/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m7s\u001b[0m 35ms/step - loss: 0.0035 - mae: 0.0462 - val_loss: 0.0019 - val_mae: 0.0353\nEpoch 20/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 35ms/step - loss: 0.0035 - mae: 0.0458 - val_loss: 0.0017 - val_mae: 0.0330\nEpoch 21/50\n\u001b[1m191/191\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m10s\u001b[0m 36ms/step - loss: 0.0034 - mae: 0.0452 - val_loss: 0.0017 - val_mae: 0.0329\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 11,
+    "source": "test_loss, test_mae = model.evaluate(X_test, y_test)\nprint(f'Test Loss: {test_loss:.4f}, Test MAE: {test_mae:.4f}')",
+    "text_outputs": [
+      "\u001b[1m49/49\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 17ms/step - loss: 0.0017 - mae: 0.0315\nTest Loss: 0.0018, Test MAE: 0.0322\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 12,
+    "source": "def inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    \"\"\"\n    Inverse scale predictions for multi-step output.\n\n    Args:\n        scaled_predictions: Array of shape (n_samples, n_steps)\n        scaler: Fitted MinMaxScaler object\n        feature_index: Index of the target feature in the original data\n\n    Returns:\n        Array of shape (n_samples, n_steps) with inverse-scaled predictions\n    \"\"\"\n    # Get the number of samples and steps\n    n_samples, n_steps = scaled_predictions.shape\n\n    # Create a dummy array with the same shape as the original data\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n\n    # Fill the target feature column with the predictions\n    dummy[:, feature_index] = scaled_predictions.flatten()\n\n    # Inverse transform the dummy array\n    inverse_scaled = scaler.inverse_transform(dummy)\n\n    # Reshape back to (n_samples, n_steps)\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 13,
+    "source": "# Make predictions\ntest_predictions = model.predict(X_test[:1])  # Predict first test sample\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get the corresponding timestamps for the predictions\nprediction_timestamps = test_df.index[window_size:window_size+24]",
+    "text_outputs": [
+      "\u001b[1m1/1\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 444ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 14,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(test_df.index[window_size:window_size+24], test_df['Engine_Temperature'].iloc[window_size:window_size+24], label='Actual')\nplt.plot(test_df.index[window_size:window_size+24], test_predictions.flatten(), label='Predicted')  # Flatten predictions\nplt.title('24-Hour Temperature Prediction vs Actual')\nplt.xlabel('Datetime')\nplt.ylabel('Engine Temperature (\u00b0C)')\nplt.legend()\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 15,
+    "source": "model.save(\"Final_Temp_Prediction_Model.h5\")",
+    "text_outputs": [
+      "WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. \n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 16,
+    "source": "import pickle\n\nwith open('scaler.pkl', 'wb') as f:\n    pickle.dump(scaler, f)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Engine Temperature\\Training_LSTM_Karachi.ipynb",
+    "cell_zero_based": 17,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Generating_Data.ipynb",
+    "cell_zero_based": 0,
+    "source": "import pandas as pd\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# --- Configuration ---\nnp.random.seed(42)\nSTART_DATE = '2024-01-01'\nEND_DATE   = '2024-12-31'\n\n# Tyre pressure parameters\nBASE_PRESSURE             = 32.0       # Typical nominal pressure in PSI\nREFILL_THRESHOLD          = 28.0       # Refill if below this PSI\nMAX_PRESSURE              = 36.0       # Upper bound after refill\nMIN_PRESSURE              = 26.0       # Floor for realistic data\nLEAKAGE_PER_DAY           = 0.10       # ~3 PSI/month (daily leakage)\nTEMP_EFFECT_SCALE         = 0.05       # How strongly temperature difference affects PSI\nSUDDEN_DROP_PROB          = 0.01       # 1% chance of sudden drop each interval\nSUDDEN_DROP_RANGE         = (0.5, 2.0) # Range of sudden drop in PSI\nMAX_DAYS_BETWEEN_REFILLS  = 60         # Force refill if no refill for 60 days\n\n# For 3-hourly readings, there are 8 intervals per day\nINTERVALS_PER_DAY = 24 // 3  # equals 8\nLEAKAGE_PER_INTERVAL = LEAKAGE_PER_DAY / INTERVALS_PER_DAY\nMAX_INTERVALS_BETWEEN_REFILLS = MAX_DAYS_BETWEEN_REFILLS * INTERVALS_PER_DAY\n\n# --- Generate date range (3-hourly) ---\ndates = pd.date_range(start=START_DATE, end=END_DATE, freq='3H')\nn_intervals = len(dates)\n\n# --- Simple Karachi temperature model (applied at each timestamp) ---\ndef karachi_temp_model(day_of_year):\n    \"\"\"\n    Rough sine-wave model for Karachi:\n      - Peak around day 172 (late June)\n      - Mean ~25\u00b0C, amplitude ~8\u00b0C\n    \"\"\"\n    return 25 + 8 * np.sin(2 * np.pi * (day_of_year - 172) / 365)\n\n# Generate temperature array for each 3-hour timestamp\ntemperature = []\nfor current_date in dates:\n    day_of_year = current_date.day_of_year\n    base_temp = karachi_temp_model(day_of_year)\n    # Add random variation for each interval\n    temp = base_temp + np.random.normal(0, 1.5)\n    temperature.append(temp)\ntemperature = np.array(temperature)\n\n# --- Simulate tyre pressure for each 3-hour interval ---\npressure = np.zeros(n_intervals)\npressure[0] = BASE_PRESSURE + np.random.normal(0, 0.5)  # Start near 32 PSI\nintervals_since_refill = 0\n\nfor i in range(1, n_intervals):\n    prev_pressure = pressure[i - 1]\n    \n    # Temperature difference from previous interval\n    temp_diff = temperature[i] - temperature[i - 1]\n    \n    # Leakage for this interval\n    interval_loss = LEAKAGE_PER_INTERVAL\n    \n    # Temperature effect on pressure\n    temp_effect = TEMP_EFFECT_SCALE * temp_diff\n    \n    # Random usage noise\n    usage_noise = np.random.normal(0, 0.3)\n    \n    # Compute current pressure\n    current_pressure = prev_pressure - interval_loss + temp_effect + usage_noise\n    \n    # Occasional sudden drop (e.g., rough roads or puncture)\n    if np.random.rand() < SUDDEN_DROP_PROB:\n        drop_amount = np.random.uniform(*SUDDEN_DROP_RANGE)\n        current_pressure -= drop_amount\n    \n    # Increment intervals since last refill\n    intervals_since_refill += 1\n    \n    # Check refill conditions\n    if current_pressure < REFILL_THRESHOLD or intervals_since_refill >= MAX_INTERVALS_BETWEEN_REFILLS:\n        # Refill to a random level between BASE_PRESSURE and MAX_PRESSURE\n        current_pressure = np.random.uniform(BASE_PRESSURE, MAX_PRESSURE)\n        intervals_since_refill = 0\n        \n    pressure[i] = current_pressure\n\n# Clip final pressures to a realistic range\npressure = np.clip(pressure, MIN_PRESSURE, MAX_PRESSURE)\n\n# --- Create final DataFrame with only two columns ---\ndf = pd.DataFrame({\n    'Date': dates,\n    'Tyre_Pressure_PSI': pressure\n})\n\n# --- Plot just the tyre pressure ---\nplt.figure(figsize=(12, 5))\nplt.plot(df['Date'], df['Tyre_Pressure_PSI'], label='3-Hourly Tyre Pressure', color='blue')\nplt.title('Realistic Tyre Pressure Variation - Karachi 2024 (3-Hourly Readings)')\nplt.xlabel('Date')\nplt.ylabel('Tyre Pressure (PSI)')\nplt.grid(True)\nplt.legend()\nplt.tight_layout()\nplt.show()",
+    "text_outputs": [
+      "C:\\Users\\Wahaj Raza\\AppData\\Local\\Temp\\ipykernel_11568\\1086916138.py:27: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  dates = pd.date_range(start=START_DATE, end=END_DATE, freq='3H')\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Generating_Data.ipynb",
+    "cell_zero_based": 1,
+    "source": "df.head()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Generating_Data.ipynb",
+    "cell_zero_based": 2,
+    "source": "# --- (Optional) Save to CSV ---\ndf.to_csv('tyre_pressure_2024.csv', index=False)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Generating_Data.ipynb",
+    "cell_zero_based": 3,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nimport pickle\nfrom tensorflow.keras.models import load_model",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 1,
+    "source": "from tensorflow.keras.models import load_model\nimport tensorflow.keras.losses\n\ncustom_objects = {\"mse\": tensorflow.keras.losses.MeanSquaredError()}\n\nmodel = load_model('/content/Final_TP_Prediction_Model.h5', custom_objects=custom_objects)",
+    "text_outputs": [
+      "WARNING:absl:Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 2,
+    "source": "with open('/content/scaler_TP.pkl', 'rb') as f:\n    scaler = pickle.load(f)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 3,
+    "source": "import numpy as np\nimport pandas as pd\n\ndef generate_dummy_tp_data():\n    date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")  # 1 week of hourly data\n\n    day_hours = date_rng.hour\n    base_pressure = 35 - 1.5 * np.sin(2 * np.pi * day_hours / 24)  # Daily variation\n\n    weekly_trend = 0.5 * np.sin(2 * np.pi * date_rng.dayofweek / 7)  # Weekly cycle\n\n    temperature_effect = np.where((7 <= day_hours) & (day_hours <= 17), -0.3, 0)  # Lower TP in heat\n\n    np.random.seed(42)\n    noise = np.random.normal(0, 0.2, 168)  # Small noise\n\n    tyre_pressure = base_pressure + weekly_trend + temperature_effect + noise\n\n    df = pd.DataFrame({\"datetime\": date_rng, \"Tyre_Pressure_PSI\": tyre_pressure})\n\n    return df\n\n# Example usage\ndf = generate_dummy_tp_data()\nprint(df.head())",
+    "text_outputs": [
+      "             datetime  Tyre_Pressure_PSI\n0 2025-03-01 00:00:00          34.611879\n1 2025-03-01 01:00:00          34.096655\n2 2025-03-01 02:00:00          33.892074\n3 2025-03-01 03:00:00          33.756482\n4 2025-03-01 04:00:00          33.166667\n",
+      "<ipython-input-69-8edafa7a7730>:5: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")  # 1 week of hourly data\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 4,
+    "source": "df_new = generate_dummy_tp_data()\ndf_new.head()",
+    "text_outputs": [
+      "<ipython-input-69-8edafa7a7730>:5: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")  # 1 week of hourly data\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 5,
+    "source": "df_new.describe()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 6,
+    "source": "# Load new dataset (make sure it has at least 168 hours of data)\ndf_new['datetime'] = pd.to_datetime(df_new['datetime'])\ndf_new.set_index('datetime', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 7,
+    "source": "df_new.info()",
+    "text_outputs": [
+      "<class 'pandas.core.frame.DataFrame'>\nDatetimeIndex: 168 entries, 2025-03-01 00:00:00 to 2025-03-07 23:00:00\nData columns (total 1 columns):\n #   Column             Non-Null Count  Dtype  \n---  ------             --------------  -----  \n 0   Tyre_Pressure_PSI  168 non-null    float64\ndtypes: float64(1)\nmemory usage: 2.6 KB\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 8,
+    "source": "import numpy as np\nimport pandas as pd\n\ndef create_features(df):\n    \"\"\"\n    Enhances the tyre-pressure DataFrame with various time-based,\n    cyclical, and lag/rolling features.\n\n    Assumptions:\n    1) df.index is a DateTimeIndex at hourly frequency.\n    2) The main column is 'tyre_pressure' in PSI.\n    \"\"\"\n    # ------------------------------------------------------------------\n    # 1. Basic Time-Based Features\n    # ------------------------------------------------------------------\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek  # Monday=0, Sunday=6\n    df[\"Month\"] = df.index.month\n\n    # Weekend and Rush Hour flags (example logic)\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n\n    # ------------------------------------------------------------------\n    # 2. Cyclical Encoding for Hour, Day of Week, Month\n    # ------------------------------------------------------------------\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour'] / 24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour'] / 24)\n\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)\n\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month'] - 1) / 12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month'] - 1) / 12)\n\n    # ------------------------------------------------------------------\n    # 3. Lag and Rolling Features (using tyre_pressure)\n    # ------------------------------------------------------------------\n    # 24-hour lag (yesterday at the same hour)\n    df['tp_lag_24h'] = df['Tyre_Pressure_PSI'].shift(24)\n\n    # 72-hour rolling average (~3 days)\n    df['tp_rolling_avg_3d'] = df['Tyre_Pressure_PSI'].rolling(window=72).mean()\n\n    # ------------------------------------------------------------------\n    # 4. Cleanup: Drop Unwanted Columns & Rows with NaNs\n    # ------------------------------------------------------------------\n    # We drop the raw Hour/DayOfWeek/Month columns now that we've\n    # extracted cyclical features\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n\n    # Drop any rows that became NaN due to shift or rolling\n    df.dropna(inplace=True)\n\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 9,
+    "source": "# Apply feature engineering function\ndf = create_features(df_new)\n\n# Define features and target (replacing Engine_Temperature with tyre_pressure)\nfeatures = ['Tyre_Pressure_PSI', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'tp_lag_24h',\n            'tp_rolling_avg_3d']\n\n# Define the target variable (the value we want to predict)\ntarget = 'Tyre_Pressure_PSI'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 10,
+    "source": "latest_data = df_new[features].iloc[-56:]  # Last 56 hours",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 11,
+    "source": "# Scale data using saved scaler\nlatest_scaled = scaler.transform(latest_data)\nlatest_scaled = np.expand_dims(latest_scaled, axis=0)  # Reshape for LSTM",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 12,
+    "source": "# Predict next 24 hours\npredictions_scaled = model.predict(latest_scaled)",
+    "text_outputs": [
+      "\u001b[1m1/1\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 836ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 13,
+    "source": "# Function to inverse scale predictions\ndef inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    n_samples, n_steps = scaled_predictions.shape\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n    dummy[:, feature_index] = scaled_predictions.flatten()\n\n    inverse_scaled = scaler.inverse_transform(dummy)\n\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 14,
+    "source": "# Convert predictions back to original temperature scale\npredictions = inverse_scale_predictions(predictions_scaled, scaler)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 15,
+    "source": "# Generate timestamps for the next 24 hours\nfuture_timestamps = pd.date_range(start=df_new.index[-1], periods=9, freq='H')[1:]",
+    "text_outputs": [
+      "<ipython-input-88-c3f978dee180>:2: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  future_timestamps = pd.date_range(start=df_new.index[-1], periods=9, freq='H')[1:]\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 16,
+    "source": "predictions.shape",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 17,
+    "source": "# Create DataFrame with timestamps and predicted values\npredictions_df = pd.DataFrame({'datetime': future_timestamps, 'Tyre_Pressure_PSI': predictions.flatten()})\n\nprint(predictions_df)",
+    "text_outputs": [
+      "             datetime  Tyre_Pressure_PSI\n0 2025-03-08 00:00:00          32.958866\n1 2025-03-08 01:00:00          32.515794\n2 2025-03-08 02:00:00          32.330486\n3 2025-03-08 03:00:00          31.601228\n4 2025-03-08 04:00:00          32.524266\n5 2025-03-08 05:00:00          32.010741\n6 2025-03-08 06:00:00          32.337428\n7 2025-03-08 07:00:00          32.100252\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 18,
+    "source": "import matplotlib.pyplot as plt\nplt.figure(figsize=(12, 6))\nplt.plot(df_new.index[-56:], df_new['Tyre_Pressure_PSI'].iloc[-56:], label=\"Actual Last 168 Hours\", color=\"blue\")\nplt.plot(predictions_df['datetime'], predictions_df['Tyre_Pressure_PSI'], label=\"Predicted Next 24 Hours\", color=\"red\", linestyle='dashed')\nplt.xlabel(\"Time\")\nplt.ylabel(\"Engine Temperature\")\nplt.title(\"Actual vs Predicted Engine Temperature\")\nplt.legend()\nplt.xticks(rotation=45)\nplt.grid()\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Testing_Pipeline_TP.ipynb",
+    "cell_zero_based": 19,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nfrom sklearn.preprocessing import MinMaxScaler\nfrom sklearn.model_selection import train_test_split\nfrom tensorflow.keras.models import Sequential\nfrom tensorflow.keras.layers import LSTM, Dense, Dropout\nimport matplotlib.pyplot as plt",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 1,
+    "source": "df = pd.read_csv('/content/tyre_pressure_2024.csv')\ndf['Date'] = pd.to_datetime(df['Date'])\ndf.set_index('Date', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 2,
+    "source": "df.info()",
+    "text_outputs": [
+      "<class 'pandas.core.frame.DataFrame'>\nDatetimeIndex: 2921 entries, 2024-01-01 00:00:00 to 2024-12-31 00:00:00\nData columns (total 1 columns):\n #   Column             Non-Null Count  Dtype  \n---  ------             --------------  -----  \n 0   Tyre_Pressure_PSI  2921 non-null   float64\ndtypes: float64(1)\nmemory usage: 45.6 KB\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 3,
+    "source": "import numpy as np\nimport pandas as pd\n\ndef create_features(df):\n    \"\"\"\n    Enhances the tyre-pressure DataFrame with various time-based,\n    cyclical, and lag/rolling features.\n\n    Assumptions:\n    1) df.index is a DateTimeIndex at hourly frequency.\n    2) The main column is 'tyre_pressure' in PSI.\n    \"\"\"\n    # ------------------------------------------------------------------\n    # 1. Basic Time-Based Features\n    # ------------------------------------------------------------------\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek  # Monday=0, Sunday=6\n    df[\"Month\"] = df.index.month\n\n    # Weekend and Rush Hour flags (example logic)\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n\n    # ------------------------------------------------------------------\n    # 2. Cyclical Encoding for Hour, Day of Week, Month\n    # ------------------------------------------------------------------\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour'] / 24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour'] / 24)\n\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)\n\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month'] - 1) / 12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month'] - 1) / 12)\n\n    # ------------------------------------------------------------------\n    # 3. Lag and Rolling Features (using tyre_pressure)\n    # ------------------------------------------------------------------\n    # 24-hour lag (yesterday at the same hour)\n    df['tp_lag_24h'] = df['Tyre_Pressure_PSI'].shift(24)\n\n    # 72-hour rolling average (~3 days)\n    df['tp_rolling_avg_3d'] = df['Tyre_Pressure_PSI'].rolling(window=72).mean()\n\n    # ------------------------------------------------------------------\n    # 4. Cleanup: Drop Unwanted Columns & Rows with NaNs\n    # ------------------------------------------------------------------\n    # We drop the raw Hour/DayOfWeek/Month columns now that we've\n    # extracted cyclical features\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n\n    # Drop any rows that became NaN due to shift or rolling\n    df.dropna(inplace=True)\n\n    return df\n",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 4,
+    "source": "# Apply feature engineering function\ndf = create_features(df)\n\n# Define features and target (replacing Engine_Temperature with tyre_pressure)\nfeatures = ['Tyre_Pressure_PSI', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'tp_lag_24h',\n            'tp_rolling_avg_3d']\n\n# Define the target variable (the value we want to predict)\ntarget = 'Tyre_Pressure_PSI'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 5,
+    "source": "train_size = int(len(df) * 0.1)\ntrain_df = df.iloc[:train_size]\ntest_df = df.iloc[train_size:]",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 6,
+    "source": "scaler = MinMaxScaler()\ntrain_scaled = scaler.fit_transform(train_df[features])\ntest_scaled = scaler.transform(test_df[features])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 7,
+    "source": "def create_sequences(data, window_size):\n    X, y = [], []\n    for i in range(len(data) - window_size - 8):  # Predict 8 readings (24 hours ahead)\n        X.append(data[i:i+window_size])\n        y.append(data[i+window_size:i+window_size+8, 0])  # Next 8 pressure values\n    return np.array(X), np.array(y)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 8,
+    "source": "window_size = 56  # 1 week lookback for 8 readings per day\nX_train, y_train = create_sequences(train_scaled, window_size)\nX_test, y_test = create_sequences(test_scaled, window_size)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 9,
+    "source": "from tensorflow.keras.layers import Bidirectional, BatchNormalization\n\nmodel = Sequential([\n    # Bidirectional LSTM to capture forward/backward patterns\n    Bidirectional(LSTM(128, return_sequences=True), input_shape=(window_size, len(features))),\n    BatchNormalization(),  # Stabilizes training\n    Dropout(0.2),  # Slightly higher dropout for regularization\n\n    # Stacked LSTM with reduced units\n    Bidirectional(LSTM(64, return_sequences=True)),\n    BatchNormalization(),\n    Dropout(0.3),\n\n    # Final LSTM layer\n    LSTM(32),\n\n    # Intermediate dense layer for non-linear mapping\n    Dense(64, activation='relu'),\n    Dropout(0.2),\n\n    # Output layer for 24-hour prediction\n    Dense(8)\n])",
+    "text_outputs": [
+      "/usr/local/lib/python3.11/dist-packages/keras/src/layers/rnn/bidirectional.py:107: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.\n  super().__init__(**kwargs)\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 10,
+    "source": "model.compile(optimizer='adam', loss='mse', metrics=['mae'])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 11,
+    "source": "from tensorflow.keras.callbacks import EarlyStopping\n\n# Define EarlyStopping callback\nearly_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)\n\n# Train the model with early stopping\nhistory = model.fit(X_train, y_train,\n                    epochs=50,\n                    batch_size=32,\n                    validation_split=0.1,\n                    verbose=1,\n                    callbacks=[early_stopping])",
+    "text_outputs": [
+      "Epoch 1/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 43ms/step - loss: 0.0152 - mae: 0.0979 - val_loss: 0.1260 - val_mae: 0.3451\nEpoch 2/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 31ms/step - loss: 0.0196 - mae: 0.1083 - val_loss: 0.1215 - val_mae: 0.3397\nEpoch 3/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 34ms/step - loss: 0.0166 - mae: 0.1015 - val_loss: 0.1362 - val_mae: 0.3611\nEpoch 4/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0165 - mae: 0.0994 - val_loss: 0.1145 - val_mae: 0.3291\nEpoch 5/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 28ms/step - loss: 0.0145 - mae: 0.0947 - val_loss: 0.1044 - val_mae: 0.3123\nEpoch 6/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 41ms/step - loss: 0.0157 - mae: 0.0986 - val_loss: 0.1103 - val_mae: 0.3204\nEpoch 7/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 42ms/step - loss: 0.0148 - mae: 0.0953 - val_loss: 0.1033 - val_mae: 0.3095\nEpoch 8/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 46ms/step - loss: 0.0140 - mae: 0.0938 - val_loss: 0.1395 - val_mae: 0.3664\nEpoch 9/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 41ms/step - loss: 0.0143 - mae: 0.0933 - val_loss: 0.1066 - val_mae: 0.3150\nEpoch 10/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 31ms/step - loss: 0.0138 - mae: 0.0920 - val_loss: 0.1053 - val_mae: 0.3087\nEpoch 11/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 35ms/step - loss: 0.0144 - mae: 0.0962 - val_loss: 0.1075 - val_mae: 0.3151\nEpoch 12/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 28ms/step - loss: 0.0143 - mae: 0.0940 - val_loss: 0.1215 - val_mae: 0.3409\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 12,
+    "source": "test_loss, test_mae = model.evaluate(X_test, y_test)\nprint(f'Test Loss: {test_loss:.4f}, Test MAE: {test_mae:.4f}')",
+    "text_outputs": [
+      "\u001b[1m79/79\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 9ms/step - loss: 0.0822 - mae: 0.2350\nTest Loss: 0.0807, Test MAE: 0.2368\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 13,
+    "source": "def inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    \"\"\"\n    Inverse scale predictions for multi-step output.\n\n    Args:\n        scaled_predictions: Array of shape (n_samples, n_steps)\n        scaler: Fitted MinMaxScaler object\n        feature_index: Index of the target feature in the original data\n\n    Returns:\n        Array of shape (n_samples, n_steps) with inverse-scaled predictions\n    \"\"\"\n    # Get the number of samples and steps\n    n_samples, n_steps = scaled_predictions.shape\n\n    # Create a dummy array with the same shape as the original data\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n\n    # Fill the target feature column with the predictions\n    dummy[:, feature_index] = scaled_predictions.flatten()\n\n    # Inverse transform the dummy array\n    inverse_scaled = scaler.inverse_transform(dummy)\n\n    # Reshape back to (n_samples, n_steps)\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 14,
+    "source": "# Make predictions\ntest_predictions = model.predict(X_test[:1])  # Predict first test sample\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get the corresponding timestamps for the predictions\nprediction_timestamps = test_df.index[window_size:window_size+24]",
+    "text_outputs": [
+      "\u001b[1m1/1\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 376ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 15,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(test_df.index[window_size:window_size+8], test_df['Tyre_Pressure_PSI'].iloc[window_size:window_size+8], label='Actual')\nplt.plot(test_df.index[window_size:window_size+8], test_predictions.flatten()[:8], label='Predicted')  # First 8 predictions\nplt.title('24-Hour Tyre Pressure Prediction vs Actual')\nplt.xlabel('Datetime')\nplt.ylabel('Tyre Pressure (PSI)')\nplt.legend()\nplt.grid(True)\nplt.show()\n",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 16,
+    "source": "model.save(\"Final_TP_Prediction_Model.h5\")",
+    "text_outputs": [
+      "WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. \n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 17,
+    "source": "import pickle\n\nwith open('scaler_TP.pkl', 'wb') as f:\n    pickle.dump(scaler, f)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\TP_Generated\\Training_LSTM_TP.ipynb",
+    "cell_zero_based": 18,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\generating_data.ipynb",
+    "cell_zero_based": 0,
+    "source": "import pandas as pd\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# --- Configuration ---\nnp.random.seed(42)\nSTART_DATE = '2024-01-01'\nEND_DATE   = '2024-12-31'\n\n# Parameters\nAMBIENT_INFLUENCE = 0.85           # Stronger ambient influence\nDRIVING_HEAT_MEAN_DAY = 10.0       # Avg gain due to driving in daytime\nDRIVING_HEAT_MEAN_NIGHT = 3.0      # Avg gain during night\nDRIVING_HEAT_STD = 3.0             # More variability\nMAX_TYRE_TEMP = 75.0\nMIN_TYRE_TEMP = 10.0\n\n# --- Generate date range (3-hourly) ---\ndates = pd.date_range(start=START_DATE, end=END_DATE, freq='3H')\nn_intervals = len(dates)\n\n# --- Karachi ambient temperature model ---\ndef karachi_temp_model(day_of_year):\n    return 29 + 6 * np.sin(2 * np.pi * (day_of_year - 172) / 365)\n\nambient_temp = []\nfor current_date in dates:\n    base_temp = karachi_temp_model(current_date.day_of_year)\n    noise = np.random.normal(0, 1.5)\n    ambient_temp.append(base_temp + noise)\nambient_temp = np.array(ambient_temp)\n\n# --- Simulate Tyre Temperature ---\ntyre_temp = np.zeros(n_intervals)\n\nfor i in range(n_intervals):\n    ambient = ambient_temp[i]\n    hour = dates[i].hour\n\n    if 7 <= hour <= 21:\n        driving_heat = np.random.normal(DRIVING_HEAT_MEAN_DAY, DRIVING_HEAT_STD)\n    else:\n        driving_heat = np.random.normal(DRIVING_HEAT_MEAN_NIGHT, DRIVING_HEAT_STD / 2)\n\n    temp = (AMBIENT_INFLUENCE * ambient) + driving_heat + np.random.normal(0, 1.5)\n    tyre_temp[i] = temp\n\n# Clip values\ntyre_temp = np.clip(tyre_temp, MIN_TYRE_TEMP, MAX_TYRE_TEMP)\n\n# Create DataFrame\ndf_temp = pd.DataFrame({\n    'Date': dates,\n    'Tyre_Temperature_C': tyre_temp\n})\n\n# Plot\nplt.figure(figsize=(14, 5))\nplt.plot(df_temp['Date'], df_temp['Tyre_Temperature_C'], label='3-Hourly Tyre Temp', color='darkorange')\nplt.title('Improved Tyre Temperature Simulation - Karachi 2024 (3-Hourly)')\nplt.xlabel('Date')\nplt.ylabel('Tyre Temperature (\u00b0C)')\nplt.grid(True)\nplt.legend()\nplt.tight_layout()\nplt.show()",
+    "text_outputs": [
+      "C:\\Users\\Wahaj Raza\\AppData\\Local\\Temp\\ipykernel_17404\\4118625040.py:19: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  dates = pd.date_range(start=START_DATE, end=END_DATE, freq='3H')\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\generating_data.ipynb",
+    "cell_zero_based": 1,
+    "source": "df_temp.to_csv('tyre_temp_2024.csv', index=False)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\generating_data.ipynb",
+    "cell_zero_based": 2,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nimport pickle\nfrom tensorflow.keras.models import load_model",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 1,
+    "source": "from tensorflow.keras.models import load_model\nimport tensorflow.keras.losses\n\ncustom_objects = {\"mse\": tensorflow.keras.losses.MeanSquaredError()}\n\nmodel = load_model('/content/sample_data/Final_Tyre_Temp_Prediction_Model.h5', custom_objects=custom_objects)",
+    "text_outputs": [
+      "WARNING:absl:Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 2,
+    "source": "with open('/content/sample_data/scaler_TTemp.pkl', 'rb') as f:\n    scaler = pickle.load(f)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 3,
+    "source": "def generate_dummy_tt_data():\n    date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")  # 1 week of hourly data\n    hour_of_day = date_rng.hour\n    day_of_week = date_rng.dayofweek\n\n    # Base ambient temp in Karachi around March: ~26\u00b0C\n    base_ambient = 26 + 4 * np.sin(2 * np.pi * hour_of_day / 24)  # warmer midday\n    weekly_effect = 1.5 * np.sin(2 * np.pi * day_of_week / 7)  # weekends slightly hotter\n    driving_heat = np.where((7 <= hour_of_day) & (hour_of_day <= 21), 7, 2)  # More heat when car runs\n    noise = np.random.normal(0, 1.2, 168)  # Some random variation\n\n    tyre_temp = 0.85 * (base_ambient + weekly_effect) + driving_heat + noise\n\n    df = pd.DataFrame({\n        \"datetime\": date_rng,\n        \"Tyre_Temperature_C\": tyre_temp\n    })\n    return df\n\ndf = generate_dummy_tt_data()\nprint(df.head())",
+    "text_outputs": [
+      "             datetime  Tyre_Temperature_C\n0 2025-03-01 00:00:00           22.076196\n1 2025-03-01 01:00:00           23.152401\n2 2025-03-01 02:00:00           23.846094\n3 2025-03-01 03:00:00           24.224341\n4 2025-03-01 04:00:00           25.859679\n",
+      "<ipython-input-15-0fb26865a427>:2: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")  # 1 week of hourly data\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 4,
+    "source": "df_new = generate_dummy_tt_data()\ndf_new.head()",
+    "text_outputs": [
+      "<ipython-input-15-0fb26865a427>:2: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  date_rng = pd.date_range(start=\"2025-03-01\", periods=168, freq=\"H\")  # 1 week of hourly data\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 5,
+    "source": "df_new.describe()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 6,
+    "source": "# Load new dataset (make sure it has at least 168 hours of data)\ndf_new['datetime'] = pd.to_datetime(df_new['datetime'])\ndf_new.set_index('datetime', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 7,
+    "source": "df_new.info()",
+    "text_outputs": [
+      "<class 'pandas.core.frame.DataFrame'>\nDatetimeIndex: 168 entries, 2025-03-01 00:00:00 to 2025-03-07 23:00:00\nData columns (total 1 columns):\n #   Column              Non-Null Count  Dtype  \n---  ------              --------------  -----  \n 0   Tyre_Temperature_C  168 non-null    float64\ndtypes: float64(1)\nmemory usage: 2.6 KB\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 8,
+    "source": "import numpy as np\nimport pandas as pd\n\ndef create_features(df):\n\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek  # Monday=0, Sunday=6\n    df[\"Month\"] = df.index.month\n\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n\n\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour'] / 24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour'] / 24)\n\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)\n\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month'] - 1) / 12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month'] - 1) / 12)\n\n\n    df['tp_lag_24h'] = df['Tyre_Temperature_C'].shift(24)\n\n    # 72-hour rolling average (~3 days)\n    df['tp_rolling_avg_3d'] = df['Tyre_Temperature_C'].rolling(window=72).mean()\n\n\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n\n    # Drop any rows that became NaN due to shift or rolling\n    df.dropna(inplace=True)\n\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 9,
+    "source": "# Apply feature engineering function\ndf = create_features(df_new)\n\n# Define features and target (replacing Engine_Temperature with tyre_pressure)\nfeatures = ['Tyre_Temperature_C', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'tp_lag_24h',\n            'tp_rolling_avg_3d']\n\n# Define the target variable (the value we want to predict)\ntarget = 'Tyre_Temperature_C'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 10,
+    "source": "latest_data = df_new[features].iloc[-56:]  # Last 56 hours",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 11,
+    "source": "# Scale data using saved scaler\nlatest_scaled = scaler.transform(latest_data)\nlatest_scaled = np.expand_dims(latest_scaled, axis=0)  # Reshape for LSTM",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 12,
+    "source": "# Predict next 24 hours\npredictions_scaled = model.predict(latest_scaled)",
+    "text_outputs": [
+      "\u001b[1m1/1\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 879ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 13,
+    "source": "# Function to inverse scale predictions\ndef inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    n_samples, n_steps = scaled_predictions.shape\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n    dummy[:, feature_index] = scaled_predictions.flatten()\n\n    inverse_scaled = scaler.inverse_transform(dummy)\n\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 14,
+    "source": "# Convert predictions back to original temperature scale\npredictions = inverse_scale_predictions(predictions_scaled, scaler)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 15,
+    "source": "# Generate timestamps for the next 24 hours\nfuture_timestamps = pd.date_range(start=df_new.index[-1], periods=9, freq='H')[1:]",
+    "text_outputs": [
+      "<ipython-input-27-c3f978dee180>:2: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.\n  future_timestamps = pd.date_range(start=df_new.index[-1], periods=9, freq='H')[1:]\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 16,
+    "source": "predictions.shape",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 17,
+    "source": "# Create DataFrame with timestamps and predicted values\npredictions_df = pd.DataFrame({'datetime': future_timestamps, 'Tyre_Temperature_C': predictions.flatten()})\n\nprint(predictions_df)",
+    "text_outputs": [
+      "             datetime  Tyre_Temperature_C\n0 2025-03-08 00:00:00           24.848160\n1 2025-03-08 01:00:00           25.589602\n2 2025-03-08 02:00:00           28.687724\n3 2025-03-08 03:00:00           29.345417\n4 2025-03-08 04:00:00           30.353243\n5 2025-03-08 05:00:00           31.361371\n6 2025-03-08 06:00:00           28.138926\n7 2025-03-08 07:00:00           25.359584\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 18,
+    "source": "import matplotlib.pyplot as plt\nplt.figure(figsize=(12, 6))\nplt.plot(df_new.index[-56:], df_new['Tyre_Temperature_C'].iloc[-56:], label=\"Actual Last 168 Hours\", color=\"blue\")\nplt.plot(predictions_df['datetime'], predictions_df['Tyre_Temperature_C'], label=\"Predicted Next 24 Hours\", color=\"red\", linestyle='dashed')\nplt.xlabel(\"Time\")\nplt.ylabel(\"Tyre Temperature\")\nplt.title(\"Actual vs Predicted Tyre Temperature\")\nplt.legend()\nplt.xticks(rotation=45)\nplt.grid()\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Testing_Pipeline_Temp.ipynb",
+    "cell_zero_based": 19,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nfrom sklearn.preprocessing import MinMaxScaler\nfrom sklearn.model_selection import train_test_split\nfrom tensorflow.keras.models import Sequential\nfrom tensorflow.keras.layers import LSTM, Dense, Dropout\nimport matplotlib.pyplot as plt",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 1,
+    "source": "df = pd.read_csv('/content/sample_data/tyre_temp_2024.csv')\ndf['Date'] = pd.to_datetime(df['Date'])\ndf.set_index('Date', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 2,
+    "source": "df.info()",
+    "text_outputs": [
+      "<class 'pandas.core.frame.DataFrame'>\nDatetimeIndex: 2921 entries, 2024-01-01 00:00:00 to 2024-12-31 00:00:00\nData columns (total 1 columns):\n #   Column              Non-Null Count  Dtype  \n---  ------              --------------  -----  \n 0   Tyre_Temperature_C  2921 non-null   float64\ndtypes: float64(1)\nmemory usage: 45.6 KB\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 3,
+    "source": "df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 4,
+    "source": "import numpy as np\nimport pandas as pd\n\ndef create_features(df):\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek\n    df[\"Month\"] = df.index.month\n\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour'] / 24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour'] / 24)\n\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek'] / 7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek'] / 7)\n\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month'] - 1) / 12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month'] - 1) / 12)\n\n    df['tp_lag_24h'] = df['Tyre_Temperature_C'].shift(24)\n\n    df['tp_rolling_avg_3d'] = df['Tyre_Temperature_C'].rolling(window=72).mean()\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n    df.dropna(inplace=True)\n\n    return df\n",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 5,
+    "source": "# Apply feature engineering function\ndf = create_features(df)\n\nfeatures = ['Tyre_Temperature_C', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'tp_lag_24h',\n            'tp_rolling_avg_3d']\n\ntarget = 'Tyre_Temperature_C'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 6,
+    "source": "train_size = int(len(df) * 0.1)\ntrain_df = df.iloc[:train_size]\ntest_df = df.iloc[train_size:]",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 7,
+    "source": "scaler = MinMaxScaler()\ntrain_scaled = scaler.fit_transform(train_df[features])\ntest_scaled = scaler.transform(test_df[features])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 8,
+    "source": "def create_sequences(data, window_size):\n    X, y = [], []\n    for i in range(len(data) - window_size - 8):  # Predict 8 readings (24 hours ahead)\n        X.append(data[i:i+window_size])\n        y.append(data[i+window_size:i+window_size+8, 0])  # Next 8 pressure values\n    return np.array(X), np.array(y)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 9,
+    "source": "df.head()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 10,
+    "source": "window_size = 56  # 1 week lookback for 8 readings per day\nX_train, y_train = create_sequences(train_scaled, window_size)\nX_test, y_test = create_sequences(test_scaled, window_size)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 11,
+    "source": "from tensorflow.keras.layers import Bidirectional, BatchNormalization\n\nmodel = Sequential([\n    Bidirectional(LSTM(128, return_sequences=True), input_shape=(window_size, len(features))),\n    BatchNormalization(),  # Stabilizes training\n    Dropout(0.2),\n\n    # Stacked LSTM with reduced units\n    Bidirectional(LSTM(64, return_sequences=True)),\n    BatchNormalization(),\n    Dropout(0.3),\n\n    # Final LSTM layer\n    LSTM(32),\n\n    # Intermediate dense layer for non-linear mapping\n    Dense(64, activation='relu'),\n    Dropout(0.2),\n\n    # Output layer for 24-hour prediction\n    Dense(8)\n])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 12,
+    "source": "model.compile(optimizer='adam', loss='mse', metrics=['mae'])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 13,
+    "source": "from tensorflow.keras.callbacks import EarlyStopping\n\n# Define EarlyStopping callback\nearly_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)\n\n# Train the model with early stopping\nhistory = model.fit(X_train, y_train,\n                    epochs=50,\n                    batch_size=32,\n                    validation_split=0.1,\n                    verbose=1,\n                    callbacks=[early_stopping])",
+    "text_outputs": [
+      "Epoch 1/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m9s\u001b[0m 144ms/step - loss: 0.2255 - mae: 0.3827 - val_loss: 0.1961 - val_mae: 0.3979\nEpoch 2/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 32ms/step - loss: 0.0941 - mae: 0.2500 - val_loss: 0.1792 - val_mae: 0.3758\nEpoch 3/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 31ms/step - loss: 0.0831 - mae: 0.2336 - val_loss: 0.1543 - val_mae: 0.3427\nEpoch 4/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 31ms/step - loss: 0.0791 - mae: 0.2302 - val_loss: 0.1303 - val_mae: 0.3067\nEpoch 5/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 28ms/step - loss: 0.0743 - mae: 0.2207 - val_loss: 0.1111 - val_mae: 0.2762\nEpoch 6/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 35ms/step - loss: 0.0716 - mae: 0.2197 - val_loss: 0.0899 - val_mae: 0.2428\nEpoch 7/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 30ms/step - loss: 0.0733 - mae: 0.2227 - val_loss: 0.0738 - val_mae: 0.2204\nEpoch 8/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0651 - mae: 0.2114 - val_loss: 0.0598 - val_mae: 0.2005\nEpoch 9/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0656 - mae: 0.2100 - val_loss: 0.0485 - val_mae: 0.1818\nEpoch 10/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0651 - mae: 0.2078 - val_loss: 0.0417 - val_mae: 0.1722\nEpoch 11/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 36ms/step - loss: 0.0661 - mae: 0.2107 - val_loss: 0.0383 - val_mae: 0.1661\nEpoch 12/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 31ms/step - loss: 0.0588 - mae: 0.1979 - val_loss: 0.0376 - val_mae: 0.1643\nEpoch 13/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 34ms/step - loss: 0.0642 - mae: 0.2076 - val_loss: 0.0379 - val_mae: 0.1649\nEpoch 14/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0590 - mae: 0.1972 - val_loss: 0.0385 - val_mae: 0.1653\nEpoch 15/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 31ms/step - loss: 0.0545 - mae: 0.1914 - val_loss: 0.0371 - val_mae: 0.1628\nEpoch 16/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 36ms/step - loss: 0.0571 - mae: 0.1951 - val_loss: 0.0369 - val_mae: 0.1618\nEpoch 17/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 34ms/step - loss: 0.0546 - mae: 0.1941 - val_loss: 0.0393 - val_mae: 0.1649\nEpoch 18/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0538 - mae: 0.1875 - val_loss: 0.0388 - val_mae: 0.1641\nEpoch 19/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 36ms/step - loss: 0.0495 - mae: 0.1794 - val_loss: 0.0398 - val_mae: 0.1652\nEpoch 20/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 35ms/step - loss: 0.0544 - mae: 0.1876 - val_loss: 0.0378 - val_mae: 0.1610\nEpoch 21/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0482 - mae: 0.1760 - val_loss: 0.0361 - val_mae: 0.1582\nEpoch 22/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0494 - mae: 0.1798 - val_loss: 0.0365 - val_mae: 0.1585\nEpoch 23/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 35ms/step - loss: 0.0467 - mae: 0.1747 - val_loss: 0.0361 - val_mae: 0.1576\nEpoch 24/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0462 - mae: 0.1715 - val_loss: 0.0342 - val_mae: 0.1543\nEpoch 25/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0440 - mae: 0.1665 - val_loss: 0.0358 - val_mae: 0.1558\nEpoch 26/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 28ms/step - loss: 0.0460 - mae: 0.1717 - val_loss: 0.0343 - val_mae: 0.1530\nEpoch 27/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 37ms/step - loss: 0.0457 - mae: 0.1710 - val_loss: 0.0333 - val_mae: 0.1512\nEpoch 28/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0446 - mae: 0.1680 - val_loss: 0.0323 - val_mae: 0.1497\nEpoch 29/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0450 - mae: 0.1704 - val_loss: 0.0328 - val_mae: 0.1501\nEpoch 30/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 28ms/step - loss: 0.0436 - mae: 0.1670 - val_loss: 0.0303 - val_mae: 0.1451\nEpoch 31/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 36ms/step - loss: 0.0441 - mae: 0.1681 - val_loss: 0.0305 - val_mae: 0.1444\nEpoch 32/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0444 - mae: 0.1656 - val_loss: 0.0296 - val_mae: 0.1421\nEpoch 33/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0429 - mae: 0.1663 - val_loss: 0.0302 - val_mae: 0.1427\nEpoch 34/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 37ms/step - loss: 0.0423 - mae: 0.1659 - val_loss: 0.0285 - val_mae: 0.1396\nEpoch 35/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 43ms/step - loss: 0.0416 - mae: 0.1614 - val_loss: 0.0282 - val_mae: 0.1394\nEpoch 36/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 39ms/step - loss: 0.0440 - mae: 0.1684 - val_loss: 0.0281 - val_mae: 0.1393\nEpoch 37/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 46ms/step - loss: 0.0432 - mae: 0.1668 - val_loss: 0.0278 - val_mae: 0.1386\nEpoch 38/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 49ms/step - loss: 0.0418 - mae: 0.1653 - val_loss: 0.0269 - val_mae: 0.1358\nEpoch 39/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 33ms/step - loss: 0.0418 - mae: 0.1627 - val_loss: 0.0267 - val_mae: 0.1351\nEpoch 40/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0422 - mae: 0.1634 - val_loss: 0.0258 - val_mae: 0.1329\nEpoch 41/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 30ms/step - loss: 0.0411 - mae: 0.1631 - val_loss: 0.0254 - val_mae: 0.1314\nEpoch 42/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0410 - mae: 0.1601 - val_loss: 0.0257 - val_mae: 0.1322\nEpoch 43/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 34ms/step - loss: 0.0397 - mae: 0.1590 - val_loss: 0.0256 - val_mae: 0.1322\nEpoch 44/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0391 - mae: 0.1564 - val_loss: 0.0255 - val_mae: 0.1314\nEpoch 45/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0388 - mae: 0.1575 - val_loss: 0.0256 - val_mae: 0.1303\nEpoch 46/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0418 - mae: 0.1645 - val_loss: 0.0250 - val_mae: 0.1292\nEpoch 47/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 27ms/step - loss: 0.0393 - mae: 0.1572 - val_loss: 0.0256 - val_mae: 0.1306\nEpoch 48/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 36ms/step - loss: 0.0389 - mae: 0.1583 - val_loss: 0.0236 - val_mae: 0.1265\nEpoch 49/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 29ms/step - loss: 0.0381 - mae: 0.1575 - val_loss: 0.0240 - val_mae: 0.1262\nEpoch 50/50\n\u001b[1m7/7\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 34ms/step - loss: 0.0381 - mae: 0.1575 - val_loss: 0.0245 - val_mae: 0.1266\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 14,
+    "source": "test_loss, test_mae = model.evaluate(X_test, y_test)\nprint(f'Test Loss: {test_loss:.4f}, Test MAE: {test_mae:.4f}')",
+    "text_outputs": [
+      "\u001b[1m79/79\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m1s\u001b[0m 11ms/step - loss: 0.1045 - mae: 0.2574\nTest Loss: 0.1715, Test MAE: 0.3414\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 15,
+    "source": "def inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    n_samples, n_steps = scaled_predictions.shape\n\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n\n    dummy[:, feature_index] = scaled_predictions.flatten()\n\n    inverse_scaled = scaler.inverse_transform(dummy)\n\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 16,
+    "source": "# Make predictions\ntest_predictions = model.predict(X_test[:1])  # Predict first test sample\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get the corresponding timestamps for the predictions\nprediction_timestamps = test_df.index[window_size:window_size+24]",
+    "text_outputs": [
+      "\u001b[1m1/1\u001b[0m \u001b[32m\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u001b[0m\u001b[37m\u001b[0m \u001b[1m0s\u001b[0m 34ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 17,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(test_df.index[window_size:window_size+8], test_df['Tyre_Temperature_C'].iloc[window_size:window_size+8], label='Actual')\nplt.plot(test_df.index[window_size:window_size+8], test_predictions.flatten()[:8], label='Predicted')  # First 8 predictions\nplt.title('24-Hour Tyre_Temperature_C Prediction vs Actual')\nplt.xlabel('Datetime')\nplt.ylabel('Tyre_Temperature_C')\nplt.legend()\nplt.grid(True)\nplt.show()\n",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 18,
+    "source": "model.save(\"Final_Tyre_Temp_Prediction_Model.h5\")",
+    "text_outputs": [
+      "WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. \n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 19,
+    "source": "import pickle\n\nwith open('scaler_TP.pkl', 'wb') as f:\n    pickle.dump(scaler, f)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Temperature\\Training_LSTM_Tyre_Temp.ipynb",
+    "cell_zero_based": 20,
+    "source": "",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 0,
+    "source": "import numpy as np\nimport pandas as pd\nfrom sklearn.preprocessing import MinMaxScaler\nfrom sklearn.model_selection import train_test_split\nfrom tensorflow.keras.models import Sequential\nfrom tensorflow.keras.layers import LSTM, Dense, Dropout\nimport matplotlib.pyplot as plt",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 1,
+    "source": "df = pd.read_csv(\"tire_pressure_dataset_DXB_vehicle.csv\")\ndf['Timestamp'] = pd.to_datetime(df['Timestamp'])\ndf.set_index('Timestamp', inplace=True)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 2,
+    "source": "df.head()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 3,
+    "source": "df.describe()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 4,
+    "source": "df.info()",
+    "text_outputs": [
+      "<class 'pandas.core.frame.DataFrame'>\nDatetimeIndex: 5000 entries, 2022-04-24 12:59:00 to 2025-02-28 23:59:00\nData columns (total 1 columns):\n #   Column             Non-Null Count  Dtype  \n---  ------             --------------  -----  \n 0   Tire_Pressure_PSI  5000 non-null   float64\ndtypes: float64(1)\nmemory usage: 78.1 KB\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 5,
+    "source": "def create_features(df):\n    df[\"Hour\"] = df.index.hour\n    df[\"DayOfWeek\"] = df.index.dayofweek\n    df[\"Month\"] = df.index.month\n    df[\"isWeekend\"] = df[\"DayOfWeek\"].apply(lambda x: 1 if x >= 5 else 0)\n    df[\"isRushHour\"] = df[\"Hour\"].apply(lambda x: 1 if 7 <= x <= 9 or 17 <= x <= 19 else 0)\n    # Cyclical encoding for temporal features\n    df['hour_sin'] = np.sin(2 * np.pi * df['Hour']/24)\n    df['hour_cos'] = np.cos(2 * np.pi * df['Hour']/24)\n    df['day_sin'] = np.sin(2 * np.pi * df['DayOfWeek']/7)\n    df['day_cos'] = np.cos(2 * np.pi * df['DayOfWeek']/7)\n    df['month_sin'] = np.sin(2 * np.pi * (df['Month']-1)/12)\n    df['month_cos'] = np.cos(2 * np.pi * (df['Month']-1)/12)\n    \n    # Lag features\n    df['tp_lag_24h'] = df['Tire_Pressure_PSI'].shift(24)\n    df['tp_rolling_avg_3d'] = df['Tire_Pressure_PSI'].rolling(window=72).mean()\n    \n    # Drop original columns and NAs\n    df.drop(['Hour', 'DayOfWeek', 'Month'], axis=1, inplace=True)\n    df.dropna(inplace=True)\n    return df",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 6,
+    "source": "df = create_features(df)\n\n# Define features and target\nfeatures = ['Tire_Pressure_PSI', 'isWeekend', 'isRushHour',\n            'hour_sin', 'hour_cos', 'day_sin', 'day_cos',\n            'month_sin', 'month_cos', 'tp_lag_24h',\n            'tp_rolling_avg_3d']\ntarget = 'Tire_Pressure_PSI'",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 7,
+    "source": "train_size = int(len(df) * 0.8)\ntrain_df = df.iloc[:train_size]\ntest_df = df.iloc[train_size:]",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 8,
+    "source": "scaler = MinMaxScaler()\ntrain_scaled = scaler.fit_transform(train_df[features])\ntest_scaled = scaler.transform(test_df[features])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 9,
+    "source": "def create_sequences(data, window_size):\n    X, y = [], []\n    for i in range(len(data)-window_size-24):  # Predict 24h ahead\n        X.append(data[i:i+window_size])\n        y.append(data[i+window_size:i+window_size+24, 0])  # Next 24 temperatures\n    return np.array(X), np.array(y)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 10,
+    "source": "window_size = 35  # 1 week lookback\nX_train, y_train = create_sequences(train_scaled, window_size)\nX_test, y_test = create_sequences(test_scaled, window_size)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 11,
+    "source": "X_train.shape, y_train.shape",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 12,
+    "source": "from tensorflow.keras.layers import Bidirectional, BatchNormalization\n\nmodel = Sequential([\n    # Bidirectional LSTM to capture forward/backward patterns\n    Bidirectional(LSTM(128, return_sequences=True), input_shape=(window_size, len(features))),\n    BatchNormalization(),  # Stabilizes training\n    Dropout(0.2),  # Slightly higher dropout for regularization\n\n    # Stacked LSTM with reduced units\n    Bidirectional(LSTM(64, return_sequences=True)),\n    BatchNormalization(),\n    Dropout(0.3),\n\n    # Final LSTM layer\n    LSTM(32),\n    \n    # Intermediate dense layer for non-linear mapping\n    Dense(64, activation='relu'),\n    Dropout(0.2),\n    \n    # Output layer for 24-hour prediction\n    Dense(24)\n])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 13,
+    "source": "model.compile(optimizer='adam', loss='mse', metrics=['mae'])",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 14,
+    "source": "from tensorflow.keras.callbacks import EarlyStopping\nearly_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)\nhistory = model.fit(X_train, y_train,\n                    epochs=30,\n                    batch_size=32,\n                    validation_split=0.1,\n                    verbose=1,\n                    callbacks=[early_stopping])",
+    "text_outputs": [
+      "Epoch 1/30\n108/108 [==============================] - 14s 60ms/step - loss: 0.0938 - mae: 0.2246 - val_loss: 0.0418 - val_mae: 0.1500\nEpoch 2/30\n108/108 [==============================] - 5s 44ms/step - loss: 0.0438 - mae: 0.1465 - val_loss: 0.0378 - val_mae: 0.1448\nEpoch 3/30\n108/108 [==============================] - 5s 45ms/step - loss: 0.0344 - mae: 0.1256 - val_loss: 0.0200 - val_mae: 0.0941\nEpoch 4/30\n108/108 [==============================] - 5s 45ms/step - loss: 0.0298 - mae: 0.1145 - val_loss: 0.0165 - val_mae: 0.0704\nEpoch 5/30\n108/108 [==============================] - 5s 44ms/step - loss: 0.0264 - mae: 0.1063 - val_loss: 0.0106 - val_mae: 0.0592\nEpoch 6/30\n108/108 [==============================] - 5s 46ms/step - loss: 0.0243 - mae: 0.1008 - val_loss: 0.0136 - val_mae: 0.0526\nEpoch 7/30\n108/108 [==============================] - 5s 44ms/step - loss: 0.0231 - mae: 0.0969 - val_loss: 0.0140 - val_mae: 0.0671\nEpoch 8/30\n108/108 [==============================] - 5s 46ms/step - loss: 0.0212 - mae: 0.0914 - val_loss: 0.0114 - val_mae: 0.0508\nEpoch 9/30\n108/108 [==============================] - 5s 47ms/step - loss: 0.0201 - mae: 0.0873 - val_loss: 0.0088 - val_mae: 0.0529\nEpoch 10/30\n108/108 [==============================] - 5s 45ms/step - loss: 0.0194 - mae: 0.0851 - val_loss: 0.0082 - val_mae: 0.0413\nEpoch 11/30\n108/108 [==============================] - 5s 46ms/step - loss: 0.0180 - mae: 0.0817 - val_loss: 0.0105 - val_mae: 0.0486\nEpoch 12/30\n108/108 [==============================] - 5s 48ms/step - loss: 0.0185 - mae: 0.0823 - val_loss: 0.0110 - val_mae: 0.0462\nEpoch 13/30\n108/108 [==============================] - 5s 47ms/step - loss: 0.0164 - mae: 0.0773 - val_loss: 0.0085 - val_mae: 0.0454\nEpoch 14/30\n108/108 [==============================] - 5s 46ms/step - loss: 0.0166 - mae: 0.0767 - val_loss: 0.0149 - val_mae: 0.0476\nEpoch 15/30\n108/108 [==============================] - 5s 46ms/step - loss: 0.0159 - mae: 0.0745 - val_loss: 0.0200 - val_mae: 0.0531\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 15,
+    "source": "test_loss, test_mae = model.evaluate(X_test, y_test)\nprint(f'Test Loss: {test_loss:.4f}, Test MAE: {test_mae:.4f}')",
+    "text_outputs": [
+      "29/29 [==============================] - 1s 20ms/step - loss: 0.0163 - mae: 0.0602\nTest Loss: 0.0163, Test MAE: 0.0602\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 16,
+    "source": "def inverse_scale_predictions(scaled_predictions, scaler, feature_index=0):\n    # Get the number of samples and steps\n    n_samples, n_steps = scaled_predictions.shape\n    \n    # Create a dummy array with the same shape as the original data\n    dummy = np.zeros((n_samples * n_steps, len(features)))\n    \n    # Fill the target feature column with the predictions\n    dummy[:, feature_index] = scaled_predictions.flatten()\n    \n    # Inverse transform the dummy array\n    inverse_scaled = scaler.inverse_transform(dummy)\n    \n    # Reshape back to (n_samples, n_steps)\n    return inverse_scaled[:, feature_index].reshape(n_samples, n_steps)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 17,
+    "source": "# Make predictions\ntest_predictions = model.predict(X_test[:1])  # Predict first test sample\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get the corresponding timestamps for the predictions\nprediction_timestamps = test_df.index[window_size:window_size+24]",
+    "text_outputs": [
+      "1/1 [==============================] - 0s 67ms/step\n"
+    ]
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 18,
+    "source": "import matplotlib.pyplot as plt\nimport numpy as np\n\n# Function to inverse scale predictions correctly\ndef inverse_scale_predictions(predictions, scaler):\n    \"\"\"\n    Inverse transform the predicted values for a single target column.\n    \"\"\"\n    predictions = predictions.reshape(-1, 1)  # Ensure correct shape\n    return scaler.inverse_transform(np.hstack([predictions, np.zeros((predictions.shape[0], len(features) - 1))]))[:, 0]\n\n# Predict for first 3 test samples\nnum_samples = 3\nplt.figure(figsize=(15, 6))\n\nfor i in range(num_samples):\n    # Predict using the model\n    test_predictions = model.predict(X_test[i:i+1], verbose=0)  # Shape (1, 24)\n    test_predictions = inverse_scale_predictions(test_predictions, scaler)  # Convert back to original scale\n\n    # Ensure shape matches\n    test_predictions = test_predictions.flatten()[:5]  # Take only 5 values\n\n    # Get the corresponding timestamps\n    start_idx = window_size + i * 5  # Adjust index for 5 readings per day\n    prediction_timestamps = test_df.index[start_idx:start_idx + 5]  # Next 5 timestamps\n\n    # Ensure timestamp shape matches prediction\n    if len(test_predictions) == len(prediction_timestamps):\n        plt.plot(prediction_timestamps, test_predictions, label=f'Predicted Sample {i+1}')\n    \n    # Plot actual values\n    actual_values = test_df['Tire_Pressure_PSI'].iloc[start_idx:start_idx + 5]\n    plt.plot(actual_values.index, actual_values.values, label=f'Actual Sample {i+1}', linestyle='dashed')\n\n# Plot settings\nplt.title('Tire Pressure Prediction vs Actual (for 3 Test Samples)')\nplt.xlabel('Datetime')\nplt.ylabel('Tire_Pressure_PSI')\nplt.legend()\nplt.grid(True)\nplt.show()\n",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 19,
+    "source": "plt.figure(figsize=(15, 6))\nplt.plot(test_df.index[window_size:window_size+24], test_df['Tire_Pressure_PSI'].iloc[window_size:window_size+24], label='Actual')\nplt.plot(test_df.index[window_size:window_size+24], test_predictions.flatten(), label='Predicted')  # Flatten predictions\nplt.title('24-Hour Tire_Pressure Prediction vs Actual')\nplt.xlabel('Datetime')\nplt.ylabel('Tire_Pressure_PSI')\nplt.legend()\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 20,
+    "source": "# Function to generate predictions for a given period\ndef predict_for_period(model, scaler, df, start_index, period_days, window_size, features):\n    \"\"\"\n    Generate predictions for a specific period.\n    \n    Args:\n        model: Trained LSTM model\n        scaler: Fitted MinMaxScaler\n        df: DataFrame containing the data\n        start_index: Index to start predictions from\n        period_days: Number of days to predict\n        window_size: Lookback window size\n        features: List of feature names\n    \n    Returns:\n        A tuple of (timestamps, actual_values, predicted_values)\n    \"\"\"\n    # Calculate the number of hours in the period\n    period_hours = period_days * 5  # 5 samples per hour\n    \n    # Initialize lists to store predictions and actual values\n    predictions = []\n    actual_values = df['Tire_Pressure_PSI'].iloc[start_index:start_index + period_hours].values\n    \n    # Iterate through the period and make predictions\n    for i in range(period_hours):\n        # Get the input sequence\n        input_seq = df[features].iloc[start_index + i:start_index + i + window_size].values\n        input_seq_scaled = scaler.transform(input_seq)\n        input_seq_scaled = np.expand_dims(input_seq_scaled, axis=0)  # Add batch dimension\n        \n        # Predict the next 24 hours\n        pred = model.predict(input_seq_scaled,verbose=0)\n        pred = inverse_scale_predictions(pred, scaler)  # Inverse scale predictions\n        predictions.append(pred[0, 0])  # Append the first predicted value\n    \n    # Get timestamps for the period\n    timestamps = df.index[start_index:start_index + period_hours]\n    \n    return timestamps, actual_values, np.array(predictions)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 21,
+    "source": "# Function to plot predictions vs actual values\ndef plot_predictions(timestamps, actual_values, predicted_values, title):\n    \"\"\"\n    Plot actual vs predicted values.\n    \n    Args:\n        timestamps: Timestamps for the x-axis\n        actual_values: Actual temperature values\n        predicted_values: Predicted temperature values\n        title: Plot title\n    \"\"\"\n    plt.figure(figsize=(15, 6))\n    plt.plot(timestamps, actual_values, label='Actual', color='blue')\n    plt.plot(timestamps, predicted_values, label='Predicted', color='red', linestyle='--')\n    plt.title(title)\n    plt.xlabel('Datetime')\n    plt.ylabel('Tire_Pressure_PSI')\n    plt.legend()\n    plt.grid(True)\n    plt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 22,
+    "source": "import warnings\nwarnings.filterwarnings('ignore')  # Suppress warnings",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 23,
+    "source": "# Example: Predict for 1 month (30 days) from a specific start index\nstart_index = 4000  # Example start index (can be from train or test set)\nperiod_days = 30  # Predict for 30 days (1 month)\ntimestamps, actual_values, predicted_values = predict_for_period(\n    model, scaler, df, start_index, period_days, window_size, features\n)",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 24,
+    "source": "# Plot the results\nplot_predictions(timestamps, actual_values, predicted_values, title='1-Month Engine Temperature Prediction')",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 25,
+    "source": "# Make predictions for 5 days (120 hours)\ntest_predictions = model.predict(X_test[:5], verbose=0)  # Predict first 5 test samples\ntest_predictions = inverse_scale_predictions(test_predictions, scaler)\n\n# Get timestamps and flatten predictions\nprediction_timestamps = test_df.index[window_size:window_size+120]\ntest_predictions_flat = test_predictions.flatten()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 26,
+    "source": "# Plot results\nplt.figure(figsize=(15, 6))\nplt.plot(prediction_timestamps,\n         test_df['Tire_Pressure_PSI'].iloc[window_size:window_size+120], \n         label='Actual')\nplt.plot(prediction_timestamps, \n         test_predictions_flat, \n         label='Predicted',\n         linestyle='--')\nplt.title('5-Day Engine Temperature Prediction')\nplt.xlabel('Datetime')\nplt.ylabel('Tire_Pressure_PSI')\nplt.legend()\nplt.grid(True)\nplt.show()",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 27,
+    "source": "model.save(\"final_model_tyrepressure.h5\") ",
+    "text_outputs": []
+  },
+  {
+    "notebook": "FYP ML Training and Pipeline Code\\Tyre Pressure\\Training_TP.ipynb",
+    "cell_zero_based": 28,
+    "source": "",
+    "text_outputs": []
+  }
+]

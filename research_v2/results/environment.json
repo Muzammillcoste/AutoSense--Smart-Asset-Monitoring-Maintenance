@@ -1,0 +1,16 @@
+{
+  "Python": "3.11.9",
+  "TensorFlow": "2.18.0",
+  "NumPy": "2.0.2",
+  "pandas": "2.2.2",
+  "scikit-learn": "1.9.0",
+  "Platform": "Windows-10-10.0.26200-SP0",
+  "Devices": [
+    "PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')"
+  ],
+  "Arguments": {
+    "epochs": 20,
+    "batch_size": 64,
+    "threads": 4
+  }
+}

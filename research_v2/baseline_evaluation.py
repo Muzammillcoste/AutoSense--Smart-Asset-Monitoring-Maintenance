@@ -72,22 +72,13 @@ def metrics(y_true: np.ndarray, y_pred: np.ndarray):
 
 
 def evaluate_dataset(name: str, cfg: dict) -> pd.DataFrame:
-    df = pd.read_csv(cfg["path"])
-    df[cfg["time_col"]] = pd.to_datetime(df[cfg["time_col"]])
-    df = df[[cfg["time_col"], cfg["target_col"]]].dropna().sort_values(cfg["time_col"])
-    df = df.drop_duplicates(cfg["time_col"]).set_index(cfg["time_col"])
-
-    step_hours = infer_step_hours(df.index)
-    lookback_steps = steps_for_hours(LOOKBACK_HOURS, step_hours)
-    horizon_steps = steps_for_hours(FORECAST_HOURS, step_hours)
-    day_steps = steps_for_hours(24, step_hours)
-
-    values = df[cfg["target_col"]].to_numpy(dtype=float)
-    X, y = make_supervised(values, lookback_steps, horizon_steps)
-
-    split = int(len(X) * TRAIN_FRACTION)
-    X_train, X_test = X[:split], X[split:]
-    y_train, y_test = y[:split], y[split:]
+    from protocol import prepare
+    X, y, masks, values, starts, times, metadata = prepare(name)
+    horizon_steps = metadata["Horizon steps"]
+    lookback_steps = metadata["Lookback steps"]
+    day_steps = horizon_steps
+    X_train, X_test = X[masks["train"]], X[masks["test"]]
+    y_train, y_test = y[masks["train"]], y[masks["test"]]
 
     # Baseline 1: repeat the most recent observed value across the full horizon.
     persistence = np.repeat(X_test[:, -1][:, None], horizon_steps, axis=1)
@@ -121,11 +112,7 @@ def evaluate_dataset(name: str, cfg: dict) -> pd.DataFrame:
         ("Random Forest", rf_pred),
     ]:
         row = {"Dataset": name, "Model": model_name, **metrics(y_test, pred)}
-        row["Sampling interval (h)"] = step_hours
-        row["Lookback (h)"] = LOOKBACK_HOURS
-        row["Forecast horizon (h)"] = FORECAST_HOURS
-        row["Test windows"] = len(y_test)
-        row["Unit"] = cfg["unit"]
+        row.update(metadata)
         rows.append(row)
 
     return pd.DataFrame(rows)

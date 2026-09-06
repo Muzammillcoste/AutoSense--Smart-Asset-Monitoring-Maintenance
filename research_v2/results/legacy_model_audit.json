@@ -1,0 +1,119 @@
+[
+  {
+    "Dataset": "engine_temperature",
+    "Notebook": "Training_LSTM_Karachi.ipynb",
+    "Training fraction": 0.8,
+    "Saved scaler matches reconstructed": true,
+    "Saved scaler feature names": [
+      "Engine_Temperature",
+      "isWeekend",
+      "isRushHour",
+      "hour_sin",
+      "hour_cos",
+      "day_sin",
+      "day_cos",
+      "month_sin",
+      "month_cos",
+      "temp_lag_24h",
+      "temp_rolling_avg_3d"
+    ],
+    "Reconstructed target range": 53.793696235382754,
+    "Saved target range": 53.793696235382754,
+    "Legacy test first raw timestamp": "2024-10-26 15:00:00",
+    "Saved input config": {
+      "batch_shape": [
+        null,
+        168,
+        11
+      ],
+      "dtype": "float32",
+      "sparse": false,
+      "name": "input_layer"
+    },
+    "Saved output steps": 24,
+    "Reproduced normalized MAE": 0.03223977755270158,
+    "Physical MAE": 1.7342968003663408,
+    "Physical RMSE": 2.305796057067406,
+    "Physical R2": 0.9379517819404117,
+    "Unit": "\u00b0C",
+    "Legacy test windows": 1546
+  },
+  {
+    "Dataset": "tyre_pressure",
+    "Notebook": "Training_LSTM_TP.ipynb",
+    "Training fraction": 0.1,
+    "Saved scaler matches reconstructed": true,
+    "Saved scaler feature names": [
+      "Tyre_Pressure_PSI",
+      "isWeekend",
+      "isRushHour",
+      "hour_sin",
+      "hour_cos",
+      "day_sin",
+      "day_cos",
+      "month_sin",
+      "month_cos",
+      "tp_lag_24h",
+      "tp_rolling_avg_3d"
+    ],
+    "Reconstructed target range": 7.761140037394004,
+    "Saved target range": 7.761140037394004,
+    "Legacy test first raw timestamp": "2024-02-21 12:00:00",
+    "Saved input config": {
+      "batch_shape": [
+        null,
+        56,
+        11
+      ],
+      "dtype": "float32",
+      "sparse": false,
+      "name": "input_layer_3"
+    },
+    "Saved output steps": 8,
+    "Reproduced normalized MAE": 0.23684705296661845,
+    "Physical MAE": 1.838203145518001,
+    "Physical RMSE": 2.2047821130690632,
+    "Physical R2": -0.11054434454461703,
+    "Unit": "PSI",
+    "Legacy test windows": 2501
+  },
+  {
+    "Dataset": "tyre_temperature",
+    "Notebook": "Training_LSTM_Tyre_Temp.ipynb",
+    "Training fraction": 0.1,
+    "Saved scaler matches reconstructed": true,
+    "Saved scaler feature names": [
+      "Tyre_Temperature_C",
+      "isWeekend",
+      "isRushHour",
+      "hour_sin",
+      "hour_cos",
+      "day_sin",
+      "day_cos",
+      "month_sin",
+      "month_cos",
+      "tp_lag_24h",
+      "tp_rolling_avg_3d"
+    ],
+    "Reconstructed target range": 20.458753741650888,
+    "Saved target range": 20.458753741650888,
+    "Legacy test first raw timestamp": "2024-02-21 12:00:00",
+    "Saved input config": {
+      "batch_shape": [
+        null,
+        56,
+        11
+      ],
+      "dtype": "float32",
+      "sparse": false,
+      "name": "input_layer_2"
+    },
+    "Saved output steps": 8,
+    "Reproduced normalized MAE": 0.34135299083333936,
+    "Physical MAE": 6.983656778435304,
+    "Physical RMSE": 8.472999483231737,
+    "Physical R2": -0.9829308844828053,
+    "Unit": "\u00b0C",
+    "Legacy test windows": 2501
+  }
+]

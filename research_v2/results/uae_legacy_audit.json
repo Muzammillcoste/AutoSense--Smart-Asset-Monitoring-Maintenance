@@ -1,0 +1,22 @@
+{
+  "Dataset": "UAE engine (legacy, not benchmark)",
+  "Model": "D:\\AutoSense---Smart-Asset-Monitoring-Maintenance\\FYP ML Training and Pipeline Code\\Engine Temperature\\final_model.h5",
+  "Normalized MAE stored": 0.1794579178094864,
+  "Normalized MAE reproduced": 0.17945794654384065,
+  "Target range": 99.54479405,
+  "Stored MAE algebraic physical conversion": 17.864101468987148,
+  "Physical metrics": {
+    "MAE": 17.86410432934253,
+    "RMSE": 22.24166435349016,
+    "R2": -0.7847550653848099
+  },
+  "Unit": "degrees Celsius",
+  "Test windows": 1122,
+  "Train/test timestamp intersection": 0,
+  "Compatibility changes": [
+    "removed time_major=False (batch-major unchanged)",
+    "singleton BatchNormalization axis list to scalar",
+    "InputLayer batch_input_shape renamed batch_shape; redundant layer shape keys removed"
+  ],
+  "Original files modified": false
+}

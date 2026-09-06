@@ -1,0 +1,26 @@
+[
+  {
+    "Comparison SHA256": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174",
+    "Dataset": "engine_temperature",
+    "Windows": 1730,
+    "Aggregate and horizon metrics verified": true,
+    "Split alignment verified": true,
+    "Model reload verified": true
+  },
+  {
+    "Comparison SHA256": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174",
+    "Dataset": "tyre_pressure",
+    "Windows": 578,
+    "Aggregate and horizon metrics verified": true,
+    "Split alignment verified": true,
+    "Model reload verified": true
+  },
+  {
+    "Comparison SHA256": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174",
+    "Dataset": "tyre_temperature",
+    "Windows": 578,
+    "Aggregate and horizon metrics verified": true,
+    "Split alignment verified": true,
+    "Model reload verified": true
+  }
+]

@@ -1,0 +1,50 @@
+{
+  "Protocol": "raw80_train68_validation12_test20_v1",
+  "Dataset": "engine_temperature",
+  "Rows": 8761,
+  "Dataset path": "D:\\AutoSense---Smart-Asset-Monitoring-Maintenance\\FYP ML Training and Pipeline Code\\Engine Temperature\\karachi_2024_vehicle_temperature_data.csv",
+  "SHA256": "d6528d327f13978592bff712684343087a99942694d99f81ebda7ff28978581e",
+  "Sampling interval (h)": 1.0,
+  "Lookback (h)": 168,
+  "Forecast horizon (h)": 24,
+  "Lookback steps": 168,
+  "Horizon steps": 24,
+  "Unit": "\u00b0C",
+  "Train end row exclusive": 5956,
+  "Test start row": 7008,
+  "Train rows": 5956,
+  "Validation rows": 1052,
+  "Test rows": 1753,
+  "Train windows": 5765,
+  "Train first target": "2024-01-08 00:00:00",
+  "Train last target": "2024-09-05 03:00:00",
+  "Validation windows": 1029,
+  "Validation first target": "2024-09-05 04:00:00",
+  "Validation last target": "2024-10-18 23:00:00",
+  "Test windows": 1730,
+  "Test first target": "2024-10-19 00:00:00",
+  "Test last target": "2024-12-31 00:00:00",
+  "Model": "Bi-LSTM",
+  "Model source": "D:\\AutoSense---Smart-Asset-Monitoring-Maintenance\\research_v2\\results\\engine_temperature\\model.keras",
+  "Retrained": true,
+  "Input shape": [
+    null,
+    168,
+    1
+  ],
+  "Output shape": [
+    null,
+    24
+  ],
+  "Features": [
+    "Engine_Temperature"
+  ],
+  "Seed": 42,
+  "Max epochs": 20,
+  "Batch size": 64,
+  "Patience": 5,
+  "Shuffle": false,
+  "Training seconds": 1213.125,
+  "Epochs run": 11,
+  "Best epoch": 6
+}
