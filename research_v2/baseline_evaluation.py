@@ -63,9 +63,10 @@ def make_supervised(values: np.ndarray, lookback_steps: int, horizon_steps: int)
 def metrics(y_true: np.ndarray, y_pred: np.ndarray):
     yt = y_true.reshape(-1)
     yp = y_pred.reshape(-1)
+    mse = mean_squared_error(yt, yp)
     return {
         "MAE": mean_absolute_error(yt, yp),
-        "RMSE": mean_squared_error(yt, yp, squared=False),
+        "RMSE": float(np.sqrt(mse)),
         "R2": r2_score(yt, yp),
     }
 
