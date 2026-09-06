@@ -1,0 +1,22 @@
+Sensor,Sensor index,Train-only variance,Variance threshold,Retained after near-constant filter,Median absolute Spearman correlation with cycle,Selection procedure,Rank among retained,Selected top four
+sensor_1,1,0.0,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_2,2,0.24928286011834466,5.1589980471471655e-06,True,0.6704369035695374,train engines only; median within-engine absolute Spearman,12.0,False
+sensor_3,3,37.63361528581516,5.1589980471471655e-06,True,0.6323156566436021,train engines only; median within-engine absolute Spearman,14.0,False
+sensor_4,4,79.77004521794873,5.1589980471471655e-06,True,0.7762826640163505,train engines only; median within-engine absolute Spearman,5.0,False
+sensor_5,5,3.1554436208840472e-30,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_6,6,1.7921769353444096e-06,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_7,7,0.7665100808521718,5.1589980471471655e-06,True,0.7689142545162093,train engines only; median within-engine absolute Spearman,6.0,False
+sensor_8,8,0.0049330190077617785,5.1589980471471655e-06,True,0.7643047953874085,train engines only; median within-engine absolute Spearman,7.0,False
+sensor_9,9,515.8998047147165,5.1589980471471655e-06,True,0.8258995204457265,train engines only; median within-engine absolute Spearman,1.0,True
+sensor_10,10,1.9721522630525295e-31,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_11,11,0.0699989817540908,5.1589980471471655e-06,True,0.8134574647595505,train engines only; median within-engine absolute Spearman,2.0,True
+sensor_12,12,0.5299379271264125,5.1589980471471655e-06,True,0.8030652921229744,train engines only; median within-engine absolute Spearman,4.0,True
+sensor_13,13,0.005028756213048882,5.1589980471471655e-06,True,0.7443698653195884,train engines only; median within-engine absolute Spearman,8.0,False
+sensor_14,14,383.0311953156836,5.1589980471471655e-06,True,0.8106029936607827,train engines only; median within-engine absolute Spearman,3.0,True
+sensor_15,15,0.0014012189239482294,5.1589980471471655e-06,True,0.7181541314587594,train engines only; median within-engine absolute Spearman,9.0,False
+sensor_16,16,1.0833355937178202e-34,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_17,17,2.375837551762754,5.1589980471471655e-06,True,0.6563684253495167,train engines only; median within-engine absolute Spearman,13.0,False
+sensor_18,18,0.0,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_19,19,0.0,5.1589980471471655e-06,False,,train engines only; median within-engine absolute Spearman,,False
+sensor_20,20,0.03230785650965801,5.1589980471471655e-06,True,0.70230958996837,train engines only; median within-engine absolute Spearman,10.0,False
+sensor_21,21,0.01163369737776086,5.1589980471471655e-06,True,0.6982804883011544,train engines only; median within-engine absolute Spearman,11.0,False

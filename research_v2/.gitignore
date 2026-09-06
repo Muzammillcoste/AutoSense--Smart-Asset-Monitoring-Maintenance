@@ -1,2 +1,7 @@
 __pycache__/
 *.log
+.matplotlib-cache/
+external_data/cmapss/CMAPSSData.zip
+external_data/cmapss/train_FD001.txt
+external_data/cmapss/test_FD001.txt
+external_data/cmapss/RUL_FD001.txt

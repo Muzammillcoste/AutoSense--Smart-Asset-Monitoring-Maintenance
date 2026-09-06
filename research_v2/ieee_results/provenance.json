@@ -21,5 +21,21 @@
       "verify_results": "passed; persisted predictions, metrics, split alignment, and model reloads verified"
     },
     "final_comparison_sha256": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174"
+  },
+  "cmapss_fd001": {
+    "source_url": "https://data.nasa.gov/docs/legacy/CMAPSSData.zip",
+    "source_landing_page": "https://data.nasa.gov/dataset/cmapss-jet-engine-simulated-data",
+    "repository_page": "https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/",
+    "access_date": "2026-09-06",
+    "archive_bytes": 12425978,
+    "archive_sha256": "74bef434a34db25c7bf72e668ea4cd52afe5f2cfe44367c55a82bfd91a5a34f",
+    "fd001_file_sha256": {
+      "train_FD001.txt": "963b5e22825b34d8b21c69e1aeb4af3e647050eb672ee8834ba4b5d91d2de0f8",
+      "test_FD001.txt": "3cda7109ce17bafb5443f2ac926cfcf88154b941b8c4cf95eb55d1ddd6f52851",
+      "RUL_FD001.txt": "a19c8ec94931949d0485bdc35118206e9c81c4547b422efb9cf86f4ceddbceca"
+    },
+    "citation": "A. Saxena and K. Goebel (2008), Turbofan Engine Degradation Simulation Data Set, NASA Prognostics Data Repository, NASA Ames Research Center.",
+    "usage_note": "NASA PCoE requests acknowledgement of the repository and its donors; the portal lists the license as not specified and says use is at the user's own risk.",
+    "interpretation": "C-MAPSS is a simulator-generated engine-degradation benchmark, not physically measured commercial-flight telemetry. train_FD001 trajectories alone are used for future-sensor forecasting."
   }
 }
