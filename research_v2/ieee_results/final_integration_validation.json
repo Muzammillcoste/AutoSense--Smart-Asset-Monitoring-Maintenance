@@ -1,0 +1,61 @@
+{
+  "pinned_environment": {
+    "TensorFlow": "2.18.0",
+    "scikit-learn": "1.9.0",
+    "NumPy": "2.0.2",
+    "pandas": "2.2.2"
+  },
+  "archive_sha256": {
+    "architecture_ablation_results.zip": "3d75933e5e89a7b017e4e385303503a59247c8814d62deec4d6223c06a9da71c",
+    "autosense_multiseed_results.zip": "2adffba59c8c75787bb37d682f581f027c02ebb05ed11b2380db4407eb48fcf4",
+    "cmapss_fd001_forecasting_results.zip": "519166867d28bfeead3053a6c40a91792485246cdf21906f65f00f916c289bd8",
+    "cmapss_stage_analysis_results.zip": "e22ec5309ef8f1e0bb163323295602ce9c94b46e2355b48ebd2327a62f8aa91f",
+    "feature_ablation_results.zip": "ccd8374bd91669b18a70ca1ec0b227ca9af234ded076717fd92b1d91a4c9ab14",
+    "paper_overleaf.zip": "a59c01946feec4fdda0ff13c05ebc12fcf201fb7ce03e2325337d047eaa0b797"
+  },
+  "results": {
+    "autosense_multiseed": {
+      "accepted": true,
+      "rows": {
+        "metrics": 15,
+        "summary": 3
+      }
+    },
+    "architecture_ablation": {
+      "accepted": true,
+      "rows": 6
+    },
+    "cmapss_fd001_forecasting": {
+      "accepted": false,
+      "structurally_valid": true,
+      "reason": "C-MAPSS metrics: TensorFlow=['2.20.0'], expected 2.18.0; C-MAPSS metrics: scikit-learn=['1.6.1'], expected 1.9.0; C-MAPSS horizon: TensorFlow=['2.20.0'], expected 2.18.0; C-MAPSS horizon: scikit-learn=['1.6.1'], expected 1.9.0; C-MAPSS manifest: TensorFlow=2.20.0, expected 2.18.0",
+      "rows": {
+        "metrics": 55,
+        "horizon": 550,
+        "predictions": 44
+      }
+    },
+    "cmapss_stage_analysis": {
+      "accepted": false,
+      "structurally_valid": true,
+      "reason": "depends on rejected C-MAPSS forecasting artifact",
+      "rows": 132
+    },
+    "feature_ablation": {
+      "accepted": false,
+      "structurally_valid": true,
+      "reason": "feature: TensorFlow=['2.20.0'], expected 2.18.0; feature: scikit-learn=['1.6.1'], expected 1.9.0; feature manifest: TensorFlow=2.20.0, expected 2.18.0",
+      "rows": 18
+    },
+    "paper_overleaf": {
+      "accepted": true,
+      "newer_than_committed_source": false,
+      "checked_files": [
+        "main.tex",
+        "references.bib",
+        "tables/dataset_protocol.tex",
+        "tables/main_comparison.tex"
+      ]
+    }
+  }
+}
