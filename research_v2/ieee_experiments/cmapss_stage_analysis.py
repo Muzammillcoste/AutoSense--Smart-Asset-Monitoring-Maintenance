@@ -48,7 +48,7 @@ def main() -> None:
         raise FileNotFoundError("No C-MAPSS predictions found; run cmapss_fd001_forecasting.py first.")
     provenance = {
         "Stage analysis script SHA256": sha256(Path(__file__)),
-        "Forecasting script SHA256": "from prediction artifact",
+        "Forecasting script SHA256 source": "prediction artifact metadata",
         "Protocol SHA256": sha256(protocol_path),
         "C-MAPSS engine split SHA256": sha256(split_path),
         "Dataset SHA256": sha256(data_path),
