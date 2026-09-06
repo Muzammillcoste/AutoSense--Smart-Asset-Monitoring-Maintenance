@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -74,12 +75,12 @@ def environment_mismatches(frame: pd.DataFrame, name: str) -> list[str]:
     if missing:
         return [f"{name}: missing version columns {missing}"]
     mismatches = []
-    for column in required:
+    for column in sorted(required):
         expected = PINNED[column]
         values = set(frame[column].astype(str))
         if values != {expected}:
             mismatches.append(f"{name}: {column}={sorted(values)}, expected {expected}")
-    for column in {"NumPy", "pandas"}.intersection(frame.columns):
+    for column in sorted({"NumPy", "pandas"}.intersection(frame.columns)):
         expected = PINNED[column]
         values = set(frame[column].astype(str))
         if values != {expected}:
@@ -229,17 +230,30 @@ def validate_paper() -> dict:
 
 
 def main() -> None:
+    global STAGE
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=ROOT / "ieee_results" / "final_integration_validation.json")
     args = parser.parse_args()
-    require(STAGE.exists(), f"staging directory missing: {STAGE}")
-    results: dict[str, dict] = {}
-    results["autosense_multiseed"] = validate_autosense()
-    results["architecture_ablation"] = validate_architecture()
-    results["cmapss_fd001_forecasting"] = validate_cmapss()
-    results["cmapss_stage_analysis"] = validate_stage(results["cmapss_fd001_forecasting"]["accepted"])
-    results["feature_ablation"] = validate_feature()
-    results["paper_overleaf"] = validate_paper()
+    archive_names = [
+        "architecture_ablation_results",
+        "autosense_multiseed_results",
+        "cmapss_fd001_forecasting_results",
+        "cmapss_stage_analysis_results",
+        "feature_ablation_results",
+        "paper_overleaf",
+    ]
+    with tempfile.TemporaryDirectory(prefix="ieee_result_validation_") as temporary:
+        STAGE = Path(temporary)
+        for name in archive_names:
+            with zipfile.ZipFile(ROOT / f"{name}.zip") as archive:
+                archive.extractall(STAGE / name)
+        results: dict[str, dict] = {}
+        results["autosense_multiseed"] = validate_autosense()
+        results["architecture_ablation"] = validate_architecture()
+        results["cmapss_fd001_forecasting"] = validate_cmapss()
+        results["cmapss_stage_analysis"] = validate_stage(results["cmapss_fd001_forecasting"]["accepted"])
+        results["feature_ablation"] = validate_feature()
+        results["paper_overleaf"] = validate_paper()
     archives = sorted(ROOT.glob("*_results.zip")) + [ROOT / "paper_overleaf.zip"]
     ledger = {"pinned_environment": PINNED, "archive_sha256": {path.name: digest(path) for path in archives}, "results": results}
     args.output.write_text(json.dumps(ledger, indent=2) + "\n", encoding="utf-8")
