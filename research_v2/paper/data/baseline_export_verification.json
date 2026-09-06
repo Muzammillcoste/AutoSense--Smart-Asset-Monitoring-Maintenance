@@ -1,0 +1,34 @@
+{
+  "source_commit": "f315071db322e5a20c3bc653bb06a79ef592c635",
+  "method": "unchanged baseline_evaluation.evaluate_dataset, seed 42; export only",
+  "datasets": {
+    "engine_temperature": {
+      "aggregate_match": true,
+      "truth_and_origins_match": true,
+      "baseline_prediction_sha256": "475c494efff1c4e49e9a9130db75697c7669834163ba59042020be108374f2eb"
+    },
+    "tyre_pressure": {
+      "aggregate_match": true,
+      "truth_and_origins_match": true,
+      "baseline_prediction_sha256": "b32b65e2a88295318ca97c215b46f9b2c4057c76ba12bf534a57f73337cf60b6"
+    },
+    "tyre_temperature": {
+      "aggregate_match": true,
+      "truth_and_origins_match": true,
+      "baseline_prediction_sha256": "f6daf0d29a1ddcbdecf30f84e5a349842cbf2548787b9f3fd77044813781275b"
+    }
+  },
+  "sources": {
+    "research_v2/results/final_comparison.csv": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174",
+    "research_v2/results/bilstm_horizon_metrics.csv": "65f38e0353708b12083c9410c486656fa5a6bf4ff93ca416d61233e710cf0fa7",
+    "FYP ML Training and Pipeline Code/Engine Temperature/karachi_2024_vehicle_temperature_data.csv": "d6528d327f13978592bff712684343087a99942694d99f81ebda7ff28978581e",
+    "research_v2/results/engine_temperature/test_predictions.npz": "6f0cf3a0c2a0cffbc52d79a0a39da343855460458fdf0931654d791ec92086df",
+    "research_v2/results/engine_temperature/metadata.json": "29bc217439c1042099cdda92faa69de7f37f5178c8f522d44ea2d844816b96a1",
+    "FYP ML Training and Pipeline Code/TP_Generated/tyre_pressure_2024.csv": "63270ee9d3211afc3b6c6fcca798b89c4303721caa6924c34e44d112d45688f3",
+    "research_v2/results/tyre_pressure/test_predictions.npz": "fc35c2d82eaa2d295f94ccaa6c33a7c70ea05b27d846747981f8cc88e85b48e1",
+    "research_v2/results/tyre_pressure/metadata.json": "8181d48618eaf4b898ba69c11755c57ecc2dbced2b0a29571abb3e67e572b278",
+    "FYP ML Training and Pipeline Code/Tyre Temperature/tyre_temp_2024.csv": "451301b1fef1c683e844bffdec67cc93c607836b42ce1a344219b7b080379c3a",
+    "research_v2/results/tyre_temperature/test_predictions.npz": "c0c92fcea79fe075259791085d33bd8e212ee945131a23f3270b4e99776ffa25",
+    "research_v2/results/tyre_temperature/metadata.json": "e21cbfdc2129f0b12906ea813de95294c6d812248d13a9700c9e4664179185b2"
+  }
+}

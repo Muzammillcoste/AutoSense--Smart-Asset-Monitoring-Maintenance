@@ -1,0 +1,10 @@
+{
+  "rule": "earliest test window with RF MAE closest to median RF window MAE",
+  "zero_based_test_index": 1464,
+  "raw_target_start_row": 8472,
+  "forecast_origin": "2024-12-18 23:00:00",
+  "first_target": "2024-12-19 00:00:00",
+  "last_target": "2024-12-19 23:00:00",
+  "median_rf_window_mae": 1.5785132218698936,
+  "selected_rf_window_mae": 1.5786041773673734
+}

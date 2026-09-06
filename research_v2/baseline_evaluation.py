@@ -71,7 +71,7 @@ def metrics(y_true: np.ndarray, y_pred: np.ndarray):
     }
 
 
-def evaluate_dataset(name: str, cfg: dict) -> pd.DataFrame:
+def evaluate_dataset(name: str, cfg: dict, prediction_dir=None) -> pd.DataFrame:
     from protocol import prepare
     X, y, masks, values, starts, times, metadata = prepare(name)
     horizon_steps = metadata["Horizon steps"]
@@ -104,6 +104,14 @@ def evaluate_dataset(name: str, cfg: dict) -> pd.DataFrame:
     )
     rf.fit(X_train, y_train)
     rf_pred = rf.predict(X_test)
+
+    # Optional artifact export; fitting, predictions and aggregate metrics are unchanged.
+    if prediction_dir is not None:
+        destination = Path(prediction_dir) / name
+        destination.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(destination / "baseline_predictions.npz", truth=y_test,
+            target_start_rows=starts[masks["test"]], persistence=persistence,
+            seasonal_naive=seasonal_naive, random_forest=rf_pred)
 
     rows = []
     for model_name, pred in [

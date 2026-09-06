@@ -1,0 +1,36 @@
+{
+  "source_commit": "f315071db322e5a20c3bc653bb06a79ef592c635",
+  "sources": {
+    "research_v2/results/final_comparison.csv": "e5dea12104ee2b395c6741336898afd34d5cd0c2e3981ec993fcbb4478258174",
+    "research_v2/results/bilstm_horizon_metrics.csv": "65f38e0353708b12083c9410c486656fa5a6bf4ff93ca416d61233e710cf0fa7",
+    "FYP ML Training and Pipeline Code/Engine Temperature/karachi_2024_vehicle_temperature_data.csv": "d6528d327f13978592bff712684343087a99942694d99f81ebda7ff28978581e",
+    "research_v2/results/engine_temperature/test_predictions.npz": "6f0cf3a0c2a0cffbc52d79a0a39da343855460458fdf0931654d791ec92086df",
+    "research_v2/results/engine_temperature/metadata.json": "29bc217439c1042099cdda92faa69de7f37f5178c8f522d44ea2d844816b96a1",
+    "FYP ML Training and Pipeline Code/TP_Generated/tyre_pressure_2024.csv": "63270ee9d3211afc3b6c6fcca798b89c4303721caa6924c34e44d112d45688f3",
+    "research_v2/results/tyre_pressure/test_predictions.npz": "fc35c2d82eaa2d295f94ccaa6c33a7c70ea05b27d846747981f8cc88e85b48e1",
+    "research_v2/results/tyre_pressure/metadata.json": "8181d48618eaf4b898ba69c11755c57ecc2dbced2b0a29571abb3e67e572b278",
+    "FYP ML Training and Pipeline Code/Tyre Temperature/tyre_temp_2024.csv": "451301b1fef1c683e844bffdec67cc93c607836b42ce1a344219b7b080379c3a",
+    "research_v2/results/tyre_temperature/test_predictions.npz": "c0c92fcea79fe075259791085d33bd8e212ee945131a23f3270b4e99776ffa25",
+    "research_v2/results/tyre_temperature/metadata.json": "e21cbfdc2129f0b12906ea813de95294c6d812248d13a9700c9e4664179185b2",
+    "Documents/2_Research-Paper.docx": "5b84461c518e0da1cb6362b740b976e71ffd80b5b638c05a38ee24bea39f9059",
+    "IoT/PCB Schematic.pdf": "6905ac16e2d2d0c89605875685dd9745d284bc37effda75cc6552fc9e9069efb"
+  },
+  "figures": {
+    "model_mae_comparison": "results/final_comparison.csv; independent physical-unit axes",
+    "horizon_mae_comparison": "results/bilstm_horizon_metrics.csv and paper/data/baseline_horizon_metrics.csv; no aggregate approximation",
+    "engine_24h_forecast_comparison": {
+      "rule": "earliest test window with RF MAE closest to median RF window MAE",
+      "zero_based_test_index": 1464,
+      "raw_target_start_row": 8472,
+      "forecast_origin": "2024-12-18 23:00:00",
+      "first_target": "2024-12-19 00:00:00",
+      "last_target": "2024-12-19 23:00:00",
+      "median_rf_window_mae": 1.5785132218698936,
+      "selected_rf_window_mae": 1.5786041773673734
+    },
+    "system_architecture": "Firmware, model integration script, Apex alert ingestion/status feedback; Case/Flow and resolution linkage documented only, marked *",
+    "prototype_interfaces": "Original DOCX word/media/image7.png (1908x888), image9.png (1675x672), unchanged screenshots",
+    "salesforce_alert": "Original DOCX word/media/image6.jpeg (535x211): Vehicle Alert, not Case; low resolution, higher-resolution source needed",
+    "hardware_schematic": "IoT/PCB Schematic.pdf, first page, preserved vector source; supplementary asset"
+  }
+}
