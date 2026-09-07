@@ -1,0 +1,20 @@
+{
+  "swift_fleet.png": {
+    "source": "Documents/2_Research-Paper.docx",
+    "member": "word/media/image7.png",
+    "sha256": "9478d23d765165b454a6f2f9ad0994bfc7d988e90b063f70cf9471a2bcfc1962",
+    "processing": "Original image bytes; no resampling or content edits."
+  },
+  "swift_sensor.png": {
+    "source": "Documents/2_Research-Paper.docx",
+    "member": "word/media/image9.png",
+    "sha256": "85d46f8eb6aadb55c4b58fd7ce03e467a51bb5eba60be7ade9c8eca2394d3657",
+    "processing": "Original image bytes; no resampling or content edits."
+  },
+  "salesforce_vehicle_alert.jpeg": {
+    "source": "Documents/2_Research-Paper.docx",
+    "member": "word/media/image6.jpeg",
+    "sha256": "392948089b3a5bd14195d3af48d67cf1c7991c08ad8a444ddc222f532933cdfd",
+    "processing": "Original image bytes; no resampling or content edits."
+  }
+}
