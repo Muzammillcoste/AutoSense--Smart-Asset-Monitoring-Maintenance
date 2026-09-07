@@ -45,7 +45,7 @@ def main():
     rf = pd.read_csv(PAPER / "data/baseline_horizon_metrics.csv")
     manifest = {"source_commit": verification["source_commit"], "sources": verification["sources"], "figures": {}}
     fig, axes = plt.subplots(1, 3, figsize=(7.1, 2.65), layout="constrained")
-    labels = ["Persistence", "Seasonal\nnaive", "Random\nForest", "Bi-LSTM"]
+    labels = ["Persistence\n(last value)", "Seasonal\nnaive", "Random\nForest", "Bi-LSTM"]
     for ax, (name, title) in zip(axes, NAMES.items()):
         rows = df[df.Dataset == name]
         bars = ax.bar(range(4), rows.MAE, color=COLORS, edgecolor="black", linewidth=.6)

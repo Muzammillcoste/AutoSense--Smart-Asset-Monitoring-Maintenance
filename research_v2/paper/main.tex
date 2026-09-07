@@ -4,6 +4,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{placeins}
 \usepackage{url}
 \usepackage[hidelinks]{hyperref}
 \graphicspath{{figures/}}
@@ -62,7 +63,8 @@ Thus no C-MAPSS RUL score or physical-flight-telemetry claim is made.
 \caption{Compact, verifiable positioning of this study. ``Decision/workflow''
 means an evaluated downstream decision, not merely an architecture diagram.}
 \label{tab:related-work}
-\centering\scriptsize
+\centering\small
+\setlength{\tabcolsep}{2pt}
 \input{tables/related_work.tex}
 \end{table*}
 
@@ -287,7 +289,7 @@ $[-3.732,-3.392]$\degC for tyre temperature (RF). Every interval excludes
 zero, but dependence-aware intervals are not i.i.d. significance tests or
 evidence of operational benefit.
 
-\section{External Validation on NASA C-MAPSS FD001}
+\section{External Benchmark Evaluation on NASA C-MAPSS FD001}
 NASA C-MAPSS FD001 is an external \emph{simulated} engine-degradation
 benchmark, not real measured flight telemetry. We forecast sensors 9, 11, 14,
 and 12 at horizons one through ten cycles, using the fixed disjoint 70/15/15
@@ -296,11 +298,12 @@ engine occurs in more than one split, sensor selection uses training engines
 only, and the scaler is fitted on training engines only.
 
 Table~\ref{tab:cmapss} gives training-range-normalized macro results, which
-avoid averaging incomparable native sensor units. In C1, Random Forest has
-the lowest macro normalized MAE (0.03406) and normalized RMSE (0.04278), while
-LSTM has $R^2=0.88620$. These values describe the fixed configurations rather
-than a tuned model contest. The results were recorded with TensorFlow 2.20.0
-and scikit-learn 1.6.1, unlike the 2.18.0/1.9.0 AutoSense runs.
+avoid averaging incomparable native sensor units. In C1, Random Forest achieves
+the lowest macro normalized MAE (0.03406), lowest normalized RMSE (0.04278),
+and highest $R^2$ (0.88907) among the evaluated seed-42 model configurations.
+These values describe fixed configurations rather than a tuned model contest.
+The results were recorded with TensorFlow 2.20.0 and scikit-learn 1.6.1,
+unlike the 2.18.0/1.9.0 AutoSense runs.
 
 \begin{table*}[t]
 \caption{C-MAPSS FD001 macro-average training-range-normalized metrics.
@@ -311,53 +314,65 @@ multivariate history.}
 \input{tables/ieee_upgrade/cmapss_macro_forecasting.tex}
 \end{table*}
 
-\begin{figure*}[t]
-\centering\includegraphics[width=\textwidth]{ieee_upgrade/cmapss_external_validation.pdf}
-\caption{C-MAPSS C1 normalized MAE by target sensor. The displayed Bi-LSTM
-bar is seed 42; all three Bi-LSTM seeds remain in Table~\ref{tab:cmapss}.}
-\label{fig:cmapss}
-\end{figure*}
-
-\begin{figure}[t]
-\centering\includegraphics[width=\columnwidth]{ieee_upgrade/cmapss_horizon_mae.pdf}
-\caption{C-MAPSS C1 normalized MAE by forecast horizon for sensor 9 (Bi-LSTM
-seed 42).}
-\label{fig:cmapss-horizon}
-\end{figure}
-
 The fixed early ($<0.5$), mid ($0.5$ to $<0.8$), and late ($\geq0.8$)
 normalized-life bins are used only to stratify held-out sensor-forecasting
-error after prediction; they do not create an RUL target. Figure
-\ref{fig:stages} reports C1 stage metrics for each sensor and model. The stage
-script itself records TensorFlow 2.18.0/scikit-learn 1.9.0, but its inputs are
-the accepted forecast artifacts recorded under TensorFlow 2.20.0/scikit-learn
-1.6.1; that inherited environment deviation remains part of the provenance.
+error after prediction; they do not create an RUL target. Fig.~\ref{fig:cmapss}
+summarizes the C1 sensor, horizon, and stage views. The stage script itself
+records TensorFlow 2.18.0/scikit-learn 1.9.0, but its inputs are the accepted
+forecast artifacts recorded under TensorFlow 2.20.0/scikit-learn 1.6.1; that
+inherited environment deviation remains part of the provenance.
 
-\begin{figure*}[t]
-\centering\includegraphics[width=\textwidth]{ieee_upgrade/cmapss_stage_error.pdf}
-\caption{C-MAPSS C1 MAE stratified by fixed normalized-life stage. Each panel
-uses native units and displays the seed-42 Bi-LSTM for readability.}
-\label{fig:stages}
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=.70\textwidth]{ieee_upgrade/cmapss_external_validation.pdf}\par
+\smallskip
+\begin{minipage}[t]{.37\textwidth}
+\centering\includegraphics[width=\linewidth]{ieee_upgrade/cmapss_horizon_mae.pdf}
+\end{minipage}\hfill
+\begin{minipage}[t]{.59\textwidth}
+\centering\includegraphics[width=\linewidth]{ieee_upgrade/cmapss_stage_error.pdf}
+\end{minipage}
+\caption{C-MAPSS FD001 C1 results: top, normalized MAE by target sensor; the
+displayed Bi-LSTM bar is seed 42, while all three predeclared seeds remain in
+Table~\ref{tab:cmapss}. Bottom left, normalized MAE by forecast horizon for
+sensor 9 (Bi-LSTM seed 42). Bottom right, MAE stratified by fixed
+normalized-life stage; panels use native units and display Bi-LSTM seed 42 for
+readability.}
+\label{fig:cmapss}
 \end{figure*}
+\FloatBarrier
 
 \section{Prototype Integration and Workflow Validation}
 The repository provides three complementary forms of integration evidence. First, firmware implements sensor parsing, telemetry payloads, and platform transmission. Second, platform scripts and interface captures demonstrate the intended ingestion and forecast-display interfaces. Third, Salesforce Apex implements alert import and vehicle-status callbacks. These artifacts support technical feasibility at the prototype level; the present work inspects them without contacting live endpoints or rerunning hardware and Salesforce tests.
 
-Fig.~\ref{fig:interfaces} retains the original fleet-map and sensor-view screenshots. They establish the existence and layout of monitoring interfaces. Displayed vehicle names, readings, and thresholds are demonstration context, not the held-out synthetic benchmark or a validated operating fleet. The forecast-display screenshot is omitted to avoid confusing legacy forecast curves with the corrected comparison.
+Fig.~\ref{fig:interfaces} retains the original fleet-map, sensor-view, and
+Salesforce Vehicle Alert screenshots. They establish the existence and layout
+of monitoring interfaces. Displayed vehicle names, readings, and thresholds
+are demonstration context, not the held-out synthetic benchmark or a validated
+operating fleet. The forecast-display screenshot is omitted to avoid confusing
+legacy forecast curves with the corrected comparison.
 
-\begin{figure*}[t]
-\centering\includegraphics[width=.92\textwidth]{prototype_interfaces.pdf}
-\caption{Retained prototype interface evidence from the original project: (a) fleet map and monitoring, and (b) sensor view with a configured threshold. Screenshots are interface demonstrations, not scientific test observations.}
+The alert-ingestion service maps identifiers, severity, description, and status
+to a custom Vehicle Alert record. The separate Salesforce panel in
+Fig.~\ref{fig:interfaces} shows that record type; it is not a screenshot of a
+Salesforce Case. A separate trigger detects changes to a vehicle's status and
+calls the status service. This demonstrates the implemented feedback mechanism
+in source code, but not that closing a Case caused that update in a reproducible
+test.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=.70\textwidth]{prototype_interfaces.pdf}\par
+\smallskip
+\includegraphics[width=.34\textwidth]{salesforce_alert.pdf}
+\caption{Retained prototype interface evidence from the original project:
+(a) fleet map and monitoring, (b) sensor view with a configured threshold, and
+(c) a Salesforce Vehicle Alert record. The screenshots are interface
+demonstrations, not scientific test observations, verified Case creation, or
+verified Flow automation. The source raster for (c) is low resolution.}
 \label{fig:interfaces}
 \end{figure*}
-
-The alert-ingestion service maps identifiers, severity, description, and status to a custom Vehicle Alert record. Fig.~\ref{fig:alert} shows that record type; it is not a screenshot of a Salesforce Case. A separate trigger detects changes to a vehicle's status and calls the status service. This demonstrates the implemented feedback mechanism in source code, but not that closing a Case caused that update in a reproducible test.
-
-\begin{figure}[t]
-\centering\includegraphics[width=\columnwidth]{salesforce_alert.pdf}
-\caption{Original Salesforce Vehicle Alert record screenshot, retained as limited interface evidence. It shows a custom alert object rather than verified Case creation; the source raster is low resolution.}
-\label{fig:alert}
-\end{figure}
+\FloatBarrier
 
 Case creation and assignment through Flow, the resolution-to-vehicle linkage, and live forecast-endpoint operation are described in the original project but lack sufficient exported configuration or execution traces for independent reproduction. No latency distribution, success-rate denominator, environmental-test record, or measured downtime/cost study was found in the reviewed evidence. Consequently, the paper makes no numerical integration-reliability or response-time claim. A future integration test should trace a timestamped sensor event through alert creation, Case assignment, closure, and dashboard feedback with recorded outcomes.
 

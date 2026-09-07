@@ -22,7 +22,7 @@ PAPER = ROOT / "paper"
 RESULTS = ROOT / "ieee_results"
 OUT = Path(__file__).resolve().parent
 STAGING = OUT / "AutoSense_Research_Paper_Overleaf"
-ZIP = OUT / "AutoSense_Research_Paper_Overleaf.zip"
+ZIP = OUT / "AutoSense_Research_Paper_Overleaf_Final.zip"
 VALIDATION = OUT / "OVERLEAF_VALIDATION.md"
 TITLE = "Benchmarking Multi-Step Sensor Forecasting for Threshold-Based Predictive Maintenance: An Integrated IoT-to-Enterprise Framework"
 INPUT_RE = re.compile(r"\\input\{([^}]+)\}")
@@ -113,8 +113,8 @@ def validate_key_numerical_claims(main: str) -> list[str]:
         expectations.extend([f"{row['2.5th percentile']:.3f}", f"{row['97.5th percentile']:.3f}"])
     cmapss = pd.read_csv(RESULTS / "cmapss_fd001_metrics.csv")
     macro = cmapss[(cmapss.Configuration == "C1") & (cmapss["Target sensor"] == "MACRO_AVERAGE_NORMALIZED")].set_index(["Model", "Seed"])
-    rf, lstm = macro.loc[("Random Forest", 42)], macro.loc[("LSTM", 42)]
-    expectations.extend([f"{rf['Normalized MAE']:.5f}", f"{rf['Normalized RMSE']:.5f}", f"{lstm.R2:.5f}"])
+    rf = macro.loc[("Random Forest", 42)]
+    expectations.extend([f"{rf['Normalized MAE']:.5f}", f"{rf['Normalized RMSE']:.5f}", f"{rf.R2:.5f}"])
     missing = [value for value in expectations if value not in main]
     require(not missing, f"manuscript numeric-claim mismatch/missing values: {missing}")
     return expectations
@@ -232,6 +232,8 @@ def main() -> None:
         f"- Tables: {sum(1 for key in declared_labels if key.startswith('tab:'))}; all `\\input` paths resolve.",
         f"- Labels/references: {len(declared_labels)} labels; all {len(referenced_labels)} references resolve.",
         f"- Numerical-claim verification: {len(claims)} prose values checked; {table_sources} source CSV hashes verified for generated tables.",
+        "- Layout-source review: C-MAPSS sensor/horizon/stage evidence is one composite float, and the prototype and Vehicle Alert screenshots are one composite float; neither uses manual negative spacing or reduced page margins.",
+        "- Rendered float/overflow review: pending Overleaf compilation because the local TeX bundle is unavailable.",
         "- TODO/placeholder/FYP scan: passed.",
         "- Stale-claim scan: passed.",
         f"- Clean extraction validation: passed ({len(files)} files; main.tex at ZIP root).",

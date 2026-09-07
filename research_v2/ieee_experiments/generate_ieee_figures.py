@@ -104,7 +104,7 @@ def cmapss() -> None:
     metrics = pd.read_csv(RESULTS / "cmapss_fd001_metrics.csv")
     horizon = pd.read_csv(RESULTS / "cmapss_fd001_horizon_metrics.csv")
     targets = ["sensor_9", "sensor_11", "sensor_14", "sensor_12"]
-    fig, axes = plt.subplots(2, 2, figsize=(7.1, 4.1)); axes = axes.ravel()
+    fig, axes = plt.subplots(2, 2, figsize=(4.95, 2.9)); axes = axes.ravel()
     for ax, target in zip(axes, targets):
         group = metrics[(metrics.Configuration.eq("C1")) & (metrics["Target sensor"].eq(target))]
         group = group[(group.Model.ne("Bi-LSTM")) | (group.Seed.eq(42))]
@@ -116,7 +116,7 @@ def cmapss() -> None:
         ax.set_title(target, fontsize=8); ax.set_ylabel("Normalized MAE")
         ax.grid(axis="y", alpha=.25)
     save(fig, "cmapss_external_validation")
-    fig, ax = plt.subplots(figsize=(3.45, 2.35))
+    fig, ax = plt.subplots(figsize=(2.7, 1.9))
     group = horizon[(horizon.Configuration.eq("C1")) & (horizon["Target sensor"].eq("sensor_9"))]
     group = group[(group.Model.ne("Bi-LSTM")) | (group.Seed.eq(42))]
     for j, (model, series) in enumerate(group.groupby("Model", sort=False)):
@@ -130,7 +130,7 @@ def cmapss() -> None:
 def stage() -> None:
     frame = pd.read_csv(RESULTS / "cmapss_stage_metrics.csv")
     targets = ["sensor_9", "sensor_11", "sensor_14", "sensor_12"]
-    fig, axes = plt.subplots(2, 2, figsize=(7.1, 4.1)); axes = axes.ravel()
+    fig, axes = plt.subplots(2, 2, figsize=(4.25, 2.55)); axes = axes.ravel()
     order = ["early (<0.5 normalized cycle fraction)", "mid (0.5 to <0.8 normalized cycle fraction)", "late (>=0.8 normalized cycle fraction)"]
     for ax, target in zip(axes, targets):
         group = frame[(frame.Configuration.eq("C1")) & (frame["Target sensor"].eq(target))]
@@ -141,7 +141,7 @@ def stage() -> None:
             ax.bar(x + (j - (len(pivot.columns) - 1) / 2) * width, pivot[model], width,
                    label=model, color=COLORS[j], edgecolor="black", hatch=HATCHES[j])
         ax.set_xticks(x, ["Early", "Mid", "Late"], fontsize=7)
-        ax.set_title(target, fontsize=8); ax.set_ylabel("MAE (native sensor unit)")
+        ax.set_title(target, fontsize=8); ax.set_ylabel("MAE")
         ax.grid(axis="y", alpha=.25)
     axes[0].legend(fontsize=6)
     save(fig, "cmapss_stage_error")
