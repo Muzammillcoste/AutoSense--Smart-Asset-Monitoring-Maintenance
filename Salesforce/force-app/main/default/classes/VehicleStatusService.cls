@@ -6,7 +6,7 @@ public class VehicleStatusService {
             String status = statuses[i];
 
             HttpRequest req = new HttpRequest();
-            req.setEndpoint('https://swift-cloud.ephlux.com/api-swift/ned/workflow/LWSNalCzP_?SWIFT_API_KEY=BBtf-pvchwljttPIrm300xCJRzb93');
+            req.setEndpoint('https://swift-cloud.ephlux.com/api-swift/ned/workflow/LWSNalCzP_?SWIFT_API_KEY=YOUR_SWIFT_KEY_UPDATE_STATUS');
             req.setMethod('POST');
             req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
 

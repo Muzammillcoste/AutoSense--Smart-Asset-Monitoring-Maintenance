@@ -19,13 +19,13 @@ struct WiFiCred {
 
 const int numNetworks = 2;
 WiFiCred wifiCreds[numNetworks] = {
-    {"Sparx Ultra 11", "1234567890"},
-    {"Huzaifa", "huzaifa123567"}
+    {"Sparx Ultra 11", "YOUR_WIFI_PASSWORD"},
+    {"Huzaifa", "YOUR_WIFI_PASSWORD"}
 };
 
-const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=Bc4JfnH9ht5FMKxTNXQZKL_8WsSDR+";
-const char* POST_ALERT_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/fzuttyO91i?SWIFT_API_KEY=6rrI6H1.VrbGvAjCEfTr-xXW";
-const char* UPDATE_STATUS_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LWSNalCzP_?SWIFT_API_KEY=BBtf-pvchwljttPIrm300xCJRzb93";
+const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=YOUR_SWIFT_KEY_POST_SENSOR_READING";
+const char* POST_ALERT_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/fzuttyO91i?SWIFT_API_KEY=YOUR_SWIFT_KEY_POST_ALERT";
+const char* UPDATE_STATUS_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LWSNalCzP_?SWIFT_API_KEY=YOUR_SWIFT_KEY_UPDATE_STATUS";
 
 const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";

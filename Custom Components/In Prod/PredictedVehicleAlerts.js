@@ -9,7 +9,7 @@ const VehicleAlertsWidget = () => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
-          'https://swift-cloud.ephlux.com/api-swift/ned/integration/g7tSCP-7or?SWIFT_API_KEY=6Y5MkiaY7Q-Diwy-tm4Y7JE',
+          'https://swift-cloud.ephlux.com/api-swift/ned/integration/g7tSCP-7or?SWIFT_API_KEY=YOUR_SWIFT_KEY_PREDICTIONS',
           { user: 'test' }
         )
         const items = response?.data?.response?.obj || []
@@ -26,7 +26,7 @@ const VehicleAlertsWidget = () => {
     const fetchVehicles = async () => {
       try {
         const response = await axios.post(
-          'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1',
+          'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=YOUR_SWIFT_KEY_VEHICLES',
           { user: 'test' }
         )
         const items = response?.data?.actions?.[0]?.obj || []

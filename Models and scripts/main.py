@@ -24,8 +24,8 @@ with open('/root/FYP-Python-Script/model_scaler/scaler.pkl', 'rb') as f:
 
 
 # Webhook URLs
-vehicle_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1"
-sensor_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=tdFQHIL9F97blZ-D7eeUPblvx"
+vehicle_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_VEHICLES"]
+sensor_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_SENSOR_READINGS"]
 
 def fetch_vehicle_data():
     try:
@@ -231,8 +231,8 @@ with open('/root/FYP-Python-Script/model_scaler/scaler_TP.pkl', 'rb') as f:
 
 
 # Webhook URLs
-vehicle_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1"
-sensor_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=tdFQHIL9F97blZ-D7eeUPblvx"
+vehicle_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_VEHICLES"]
+sensor_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_SENSOR_READINGS"]
 
 def fetch_vehicle_data():
     try:
@@ -434,8 +434,8 @@ print("All predictions completed!")
 
 
 # Webhook URLs
-vehicle_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1"
-sensor_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=tdFQHIL9F97blZ-D7eeUPblvx"
+vehicle_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_VEHICLES"]
+sensor_webhook = "https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_SENSOR_READINGS"]
 
 def fetch_vehicle_data():
     try:
@@ -745,7 +745,7 @@ print("🎉 All JSON files created successfully!")
 
 
 
-Delete_pred_webhook='https://swift-cloud.ephlux.com/api-swift/ned/workflow/5N3ei2rugN?SWIFT_API_KEY=FDly5Pmmdpionoa_jE+UbaRnf32zIP'
+Delete_pred_webhook='https://swift-cloud.ephlux.com/api-swift/ned/workflow/5N3ei2rugN?SWIFT_API_KEY=' + os.environ["SWIFT_KEY_DELETE_PREDICTIONS"]
 
 response = requests.post(Delete_pred_webhook)
 response_text = response.text
@@ -756,7 +756,7 @@ import json
 import requests
 
 # Webhook URL
-webhook_url = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/QUc_x0zye9?SWIFT_API_KEY=FG3bOwsEy3faQOkP~.Hepd"
+webhook_url = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/QUc_x0zye9?SWIFT_API_KEY=" + os.environ["SWIFT_KEY_POST_PREDICTIONS"]
 
 # Directory where JSON files are stored
 json_dir = "vehicle_combined_jsons"

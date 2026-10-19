@@ -9,9 +9,9 @@ const VehicleAndAlertDisplay = () => {
   const [chartType, setChartType] = useState('alert_type')
 
   const alertsWebhook =
-    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/xuRob0A4mf?SWIFT_API_KEY=S1/JT2c/77dtlkCR+qQtZW5s+QX'
+    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/xuRob0A4mf?SWIFT_API_KEY=YOUR_SWIFT_KEY_ALERTS'
   const vehicleWebhook =
-    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1'
+    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=YOUR_SWIFT_KEY_VEHICLES'
 
   const fetchVehicleData = async () => {
     try {

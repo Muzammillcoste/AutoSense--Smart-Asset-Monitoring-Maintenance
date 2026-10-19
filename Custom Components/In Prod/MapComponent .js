@@ -7,11 +7,11 @@ const MapComponent = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState(null)
 
   const vehicleWebhook =
-    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1'
+    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=YOUR_SWIFT_KEY_VEHICLES'
   const sensorWebhook =
-    'https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=tdFQHIL9F97blZ-D7eeUPblvx'
+    'https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=YOUR_SWIFT_KEY_SENSOR_READINGS'
   const alertsWebhook =
-    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/xuRob0A4mf?SWIFT_API_KEY=S1/JT2c/77dtlkCR+qQtZW5s+QX'
+    'https://swift-cloud.ephlux.com/api-swift/ned/workflow/xuRob0A4mf?SWIFT_API_KEY=YOUR_SWIFT_KEY_ALERTS'
 
   const markerIcons = {
     active:
@@ -355,7 +355,7 @@ const MapComponent = () => {
       </style>
       <div style={{ display: 'flex', gap: '20px' }}>
         <div style={{ flex: 2 }}>
-          <LoadScript googleMapsApiKey='AIzaSyBoailEnSezAE-hZK4pruLvZTOLA91YIlQ'>
+          <LoadScript googleMapsApiKey='YOUR_GOOGLE_MAPS_API_KEY'>
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={initialCenter}

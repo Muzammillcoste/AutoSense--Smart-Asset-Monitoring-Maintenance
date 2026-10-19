@@ -19,13 +19,13 @@ struct WiFiCred {
 
 const int numNetworks = 3; // Adjust this based on how many networks you have
 WiFiCred wifiCreds[numNetworks] = {
-    {"Sparx Ultra 11", "1234567890"},
-    {"Huzaifa", "huzaifa123567"},
-    {"TP-Link_F00C", "google@1234"},
+    {"Sparx Ultra 11", "YOUR_WIFI_PASSWORD"},
+    {"Huzaifa", "YOUR_WIFI_PASSWORD"},
+    {"TP-Link_F00C", "YOUR_WIFI_PASSWORD"},
     // Add more networks here, e.g., {"NewSSID", "NewPassword"}
 };
 
-const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=Bc4JfnH9ht5FMKxTNXQZKL_8WsSDR+";
+const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=YOUR_SWIFT_KEY_POST_SENSOR_READING";
 const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
 const long  gmtOffset_sec = 0;      

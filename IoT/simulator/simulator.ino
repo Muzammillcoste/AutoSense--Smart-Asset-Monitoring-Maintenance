@@ -35,12 +35,12 @@
 
 // WiFi credentials – replace with your actual SSID and password
 const char* ssid     = "TP-Link_F00C";
-const char* password = "google@1234";
+const char* password = "YOUR_WIFI_PASSWORD";
 
 // Webhook endpoints (exact same URLs as in your Node.js code)
-const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=Bc4JfnH9ht5FMKxTNXQZKL_8WsSDR+";
-const char* POST_ALERT_WEBHOOK          = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/fzuttyO91i?SWIFT_API_KEY=6rrI6H1.VrbGvAjCEfTr-xXW";
-const char* UPDATE_STATUS_WEBHOOK       = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LWSNalCzP_?SWIFT_API_KEY=BBtf-pvchwljttPIrm300xCJRzb93";
+const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=YOUR_SWIFT_KEY_POST_SENSOR_READING";
+const char* POST_ALERT_WEBHOOK          = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/fzuttyO91i?SWIFT_API_KEY=YOUR_SWIFT_KEY_POST_ALERT";
+const char* UPDATE_STATUS_WEBHOOK       = "https://swift-cloud.ephlux.com/api-swift/ned/workflow/LWSNalCzP_?SWIFT_API_KEY=YOUR_SWIFT_KEY_UPDATE_STATUS";
 
 // --------------------------------------------------------------------------
 // Data Structures and Global Variables

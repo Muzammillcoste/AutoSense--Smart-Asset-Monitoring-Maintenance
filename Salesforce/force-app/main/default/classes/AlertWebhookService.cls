@@ -5,7 +5,7 @@ public class AlertWebhookService {
         HttpRequest req = new HttpRequest();
 
         req.setMethod('POST');
-        req.setEndpoint('https://swift-cloud.ephlux.com/api-swift/ned/workflow/xuRob0A4mf?SWIFT_API_KEY=S1/JT2c/77dtlkCR+qQtZW5s+QX');
+        req.setEndpoint('https://swift-cloud.ephlux.com/api-swift/ned/workflow/xuRob0A4mf?SWIFT_API_KEY=YOUR_SWIFT_KEY_ALERTS');
         req.setHeader('Content-Type', 'application/json');
         req.setBody('{}');
 

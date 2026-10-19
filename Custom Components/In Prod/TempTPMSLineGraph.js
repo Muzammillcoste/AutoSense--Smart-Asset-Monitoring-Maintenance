@@ -33,7 +33,7 @@ const VehicleSensorDashboard = () => {
     const fetchVehicles = async () => {
       try {
         const { data } = await axios.post(
-          'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1',
+          'https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=YOUR_SWIFT_KEY_VEHICLES',
           { user: 'test' }
         )
         const items = data.actions?.[0]?.obj
@@ -64,7 +64,7 @@ const VehicleSensorDashboard = () => {
     const fetchSensorData = async () => {
       try {
         const { data } = await axios.post(
-          'https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=tdFQHIL9F97blZ-D7eeUPblvx',
+          'https://swift-cloud.ephlux.com/api-swift/ned/integration/OY5sSM4POU?SWIFT_API_KEY=YOUR_SWIFT_KEY_SENSOR_READINGS',
           { user: 'test' }
         )
         const all =

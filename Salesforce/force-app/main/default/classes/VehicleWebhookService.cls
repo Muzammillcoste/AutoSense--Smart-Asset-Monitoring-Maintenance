@@ -3,7 +3,7 @@ public with sharing class VehicleWebhookService {
     public static void fetchAndStoreVehicles() {
         // Build HTTP request
         HttpRequest req = new HttpRequest();
-        req.setEndpoint('https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=4LVIflv9QMrGVVK1');
+        req.setEndpoint('https://swift-cloud.ephlux.com/api-swift/ned/workflow/LQDFyK106u?SWIFT_API_KEY=YOUR_SWIFT_KEY_VEHICLES');
         req.setMethod('POST');
 
         Http http = new Http();

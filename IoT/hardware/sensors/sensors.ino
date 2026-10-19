@@ -19,12 +19,12 @@ struct WiFiCred {
 
 const int numNetworks = 2;
 WiFiCred wifiCreds[numNetworks] = {
-    {"Huzaifa", "huzaifa123567"},
-    {"Sparx Ultra 11", "1234567890"},
-    {"realme C1", "12345678"}
+    {"Huzaifa", "YOUR_WIFI_PASSWORD"},
+    {"Sparx Ultra 11", "YOUR_WIFI_PASSWORD"},
+    {"realme C1", "YOUR_WIFI_PASSWORD"}
 };
 
-const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=Bc4JfnH9ht5FMKxTNXQZKL_8WsSDR+";
+const char* POST_SENSOR_READING_WEBHOOK = "https://swift-cloud.ephlux.com/api-swift/ned/integration/n1EBuKoSmc?SWIFT_API_KEY=YOUR_SWIFT_KEY_POST_SENSOR_READING";
 const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
 const long  gmtOffset_sec = 0;
