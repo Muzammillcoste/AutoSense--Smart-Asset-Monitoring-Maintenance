@@ -33,7 +33,7 @@ There is also a project explainer video at [`Graphics/Explainer Video.mp4`](Grap
 
 ## Problem and intended users
 
-The intended users were maintenance and fleet teams running ground-support vehicles for flight-catering operations. At the time, these teams relied on reactive or fixed-schedule maintenance and had limited real-time visibility of their vehicles. The project set out to give them live location and condition data, early warnings from forecasts, and a ticket-like record in Salesforce for each alert.
+AutoSense was designed for maintenance and fleet teams managing ground-support vehicles in flight-catering operations. The project explored how live condition monitoring and forecast-based alerts could supplement reactive or fixed-schedule maintenance. The project set out to give them live location and condition data, early warnings from forecasts, and a ticket-like record in Salesforce for each alert.
 
 The project was reviewed with the team's industry advisor at Ephlux. The main feedback recorded was that the dashboard should be more intuitive. Claims in the project report about reduced downtime or maintenance cost were stated goals. They were never measured.
 
@@ -107,6 +107,8 @@ In both paths the alert itself comes from a threshold rule. The ML models only p
 - Training runs without shuffling, with early stopping on validation loss.
 - Hyperparameters were not selected on test scores.
 
+**Benchmark versus deployed prototype.** The results below describe the corrected offline evaluation in `research_v2/`. The integrated prototype uses the original 11-feature models stored in [`Models and scripts/model_scaler/`](Models%20and%20scripts/model_scaler/); those deployed models are not the re-trained benchmark models. These results therefore do not measure the forecasting performance of the deployed prototype.
+
 **Test-set MAE, synthetic data, seed 42** (from [`research_v2/results/final_comparison.csv`](research_v2/results/final_comparison.csv)):
 
 | Target | Persistence | Seasonal naive | Random Forest | Bi-LSTM |
@@ -117,7 +119,15 @@ In both paths the alert itself comes from a threshold rule. The ML models only p
 
 ![MAE by model and target](research_v2/paper/figures/model_mae_comparison.png)
 
-**Main finding.** In this setting, simple baselines outperform the Bi-LSTM on all three targets. Across five seeds the Bi-LSTM reaches 5.18 ± 0.67 °C, 1.26 ± 0.22 PSI and 5.73 ± 0.89 °C ([`multiseed_summary.csv`](research_v2/ieee_results/multiseed_summary.csv)).
+**Main finding.** In this setting, simple baselines outperform the Bi-LSTM on all three targets. Across five training seeds, the Bi-LSTM test MAE was:
+
+| Target | Mean test MAE ± standard deviation across seeds |
+|---|---:|
+| Engine temperature | 5.18 ± 0.66 °C |
+| Tyre pressure | 1.26 ± 0.22 PSI |
+| Tyre temperature | 5.73 ± 0.89 °C |
+
+These statistics describe variation across training seeds, not confidence intervals for real-world performance. See the [multi-seed summary](research_v2/ieee_results/multiseed_summary.csv).
 
 The Bi-LSTM also failed in the threshold-event test. Forecasts were scored against training-derived proxy thresholds, not real fault labels:
 
@@ -126,22 +136,15 @@ The Bi-LSTM also failed in the threshold-event test. Forecasts were scored again
 
 Further experiments (architecture and feature ablations, block-bootstrap intervals, C-MAPSS forecasting and stage analysis) are documented in [`research_v2/IEEE_UPGRADE_REPORT.md`](research_v2/IEEE_UPGRADE_REPORT.md). The C-MAPSS work forecasts sensor readings only and does not estimate remaining useful life.
 
-**Superseded figures.** The original report and paper draft quote MAEs of 0.1795 °C (engine), 0.2368 MPa (tyre pressure) and 0.344 °C (tyre temperature). Those numbers should not be cited:
-
-- The first two are errors on min-max-normalized values. In physical units they correspond to about 17.9 °C and 1.84 PSI.
-- The tyre models behind them were trained on only 10% of the data.
-- The 0.344 °C figure can't be traced to any notebook.
-
-[`research_v2/AUDIT.md`](research_v2/AUDIT.md) gives the full reconstruction.
+**Evaluation update.** The original project report and paper draft contain metrics that were superseded by the 2026 audit. Use the corrected benchmark results above when citing this work. The [evaluation audit](research_v2/AUDIT.md) documents the original reporting issues, their reconstruction and the revised protocol.
 
 **Important caveats.**
 
 - All AutoSense metrics come from synthetic series, and the test windows overlap, so their errors are not independent.
-- The models in [`Models and scripts/model_scaler/`](Models%20and%20scripts/model_scaler/) used by the prototype are the *original* 11-feature models, not the re-trained `research_v2` models.
 
 ## Setup and demonstration
 
-This is a collection of components, not a single application you can run with one command. Running the full pipeline needs access to the team's Swift workspace (an Ephlux platform), which isn't public. The webhook URLs in the code point to that workspace, and every key in the repository is a placeholder.
+This is a collection of components, not a single application you can run with one command. Running the full pipeline needs access to the team's Swift workspace (an Ephlux platform), which isn't public. The code references the team's Swift workspace. To reproduce the integration, configure endpoints and credentials for a workspace you control.
 
 **Firmware** ([`FINAL_ESP32_FIRMWARE.ino`](IoT/hardware/FINAL_ESP32_FIRMWARE/FINAL_ESP32_FIRMWARE.ino))
 
