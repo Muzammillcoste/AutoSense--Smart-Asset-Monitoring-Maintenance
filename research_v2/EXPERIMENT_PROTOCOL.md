@@ -4,7 +4,7 @@ This document summarises the original experiment plan preserved in the Kaggle in
 
 ## The original protocol file
 
-The protocol was first written as a step-by-step task plan for an AI coding agent (Codex), named `CODEX_IEEE_EXECUTION_PLAN.md`. Its SHA256 is recorded in every C-MAPSS result row and Kaggle manifest as the "Protocol SHA256":
+The protocol was first written as a detailed step-by-step task plan, saved as `CODEX_IEEE_EXECUTION_PLAN.md`. Its SHA256 is recorded in every C-MAPSS result row and Kaggle manifest as the "Protocol SHA256":
 
 ```text
 1e72e4109507e7968af365367d855fac495439173f38c4c7a72c4ece71c627bb

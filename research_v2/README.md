@@ -95,7 +95,7 @@ Full retraining (CPU, slow; overwrites `results/`):
 
 ```sh
 python research_v2/bilstm_evaluation.py        # baselines + Bi-LSTM; flags --epochs --batch-size --threads
-python research_v2/build_report.py             # raw report, written as REPORT_FOR_CHATGPT_REVIEW.md
+python research_v2/build_report.py             # raw report, written as BENCHMARK_REPORT_RAW.md
 ```
 
 `build_report.py` keeps the output filename it had when its hash was recorded. [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md) is the edited, readable version of that report.

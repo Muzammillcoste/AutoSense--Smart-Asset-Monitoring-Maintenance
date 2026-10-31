@@ -41,4 +41,4 @@ The split and sensor-selection files were saved before any model was trained. Th
 | `final_integration_validation.json` | Strict check against the originally pinned environment (TensorFlow 2.18.0, scikit-learn 1.9.0). It rejects the C-MAPSS and feature runs *only* because their versions differ; they are structurally valid. |
 | `accepted_integration_validation.json` | Acceptance record: every archive accepted in its recorded environment, with the deviations noted |
 
-Both ledgers also list `paper_overleaf.zip`. That redundant archive has since been removed; the ledgers are kept unchanged as historical records. Similarly, `provenance.json` refers to `REPORT_FOR_CHATGPT_REVIEW.md`, the earlier name of [`../BENCHMARK_REPORT.md`](../BENCHMARK_REPORT.md).
+Both ledgers also list `paper_overleaf.zip`. That redundant archive has since been removed; the ledgers are kept unchanged as historical records. Similarly, `provenance.json` lists the raw benchmark report under its earlier filename; the current version is [`../BENCHMARK_REPORT.md`](../BENCHMARK_REPORT.md).

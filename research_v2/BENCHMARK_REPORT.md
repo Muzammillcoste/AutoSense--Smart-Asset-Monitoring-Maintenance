@@ -168,4 +168,4 @@ Results are not guaranteed to be bit-for-bit identical on other hardware or libr
 
 ## About this file
 
-[`build_report.py`](build_report.py) generates the raw version of this report as `REPORT_FOR_CHATGPT_REVIEW.md`. The script's hash is recorded in [`results/source_hashes.json`](results/source_hashes.json), so its code (including that filename) is left unchanged. This file is the edited, human-readable version of that output, with the same numbers.
+[`build_report.py`](build_report.py) generates the raw version of this report as `BENCHMARK_REPORT_RAW.md`. This file is the edited, human-readable version of that output, with the same numbers.

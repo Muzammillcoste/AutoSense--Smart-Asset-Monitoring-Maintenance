@@ -37,9 +37,9 @@ def main():
     git_diff=subprocess.run(["git","diff","--stat"],cwd=HERE.parent,capture_output=True,text=True).stdout.strip()
     source_hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in HERE.glob("*.py")}
     (OUT/"source_hashes.json").write_text(json.dumps(source_hashes,indent=2),encoding="utf-8")
-    report="""## REPORT FOR CHATGPT REVIEW
+    report="""## AutoSense benchmark report (raw)
 
-The experiment and legacy-metric audit are complete. This is a single-seed, fixed-budget benchmark of **24-hour multi-step sensor forecasting for threshold-based predictive maintenance** on three demonstrably synthetic datasets. It does not establish direct failure prediction, remaining useful life or operational downtime benefits. The paper has not been rewritten.
+The experiment and legacy-metric audit are complete. This is a single-seed, fixed-budget benchmark of **24-hour multi-step sensor forecasting for threshold-based predictive maintenance** on three demonstrably synthetic datasets. It does not establish direct failure prediction, remaining useful life or operational downtime benefits.
 
 ### Final aggregate metrics
 
@@ -91,7 +91,7 @@ Use the final table to state explicitly which models perform best on each target
 
 Remove or rewrite the three old physical-unit MAE claims, unsupported 10-15% downtime reduction, classification metrics used for regression, direct failure/RUL prediction, and assertions of operational aviation-fleet validation. Do not use synthetic dummy demonstrations as evidence of real operational generalization.
 
-Limitations: synthetic generators and one seed; one chronological holdout; limited training budget; no hyperparameter search; no uncertainty intervals or statistically independent forecast errors; no real-fleet external validation; no measured maintenance outcomes. The exact source of the paper's 0.344 value remains unresolved. No remaining execution blocker exists.
+Limitations: synthetic generators and one seed; one chronological holdout; limited training budget; no hyperparameter search; no uncertainty intervals or statistically independent forecast errors; no real-fleet external validation; no measured maintenance outcomes. The exact source of the paper's 0.344 value remains unresolved.
 
 ### Horizon-wise metrics
 
@@ -99,7 +99,7 @@ Limitations: synthetic generators and one seed; one chronological holdout; limit
 
 ### Files, commands and verification
 
-Created: `bilstm_evaluation.py`, `protocol.py`, `audit_originals.py`, `audit_uae_legacy.py`, `verify_generators.py`, `test_protocol.py`, `verify_results.py`, `build_report.py`, `requirements.txt`, `AUDIT.md`, `.gitignore` under `research_v2/`, this report, and generated `results/` artifacts. Modified: `research_v2/baseline_evaluation.py` and `research_v2/README.md`. The pre-existing untracked root `.gitignore` was left untouched. Original notebooks, models and the paper are unchanged.
+Created: `bilstm_evaluation.py`, `protocol.py`, `audit_originals.py`, `audit_uae_legacy.py`, `verify_generators.py`, `test_protocol.py`, `verify_results.py`, `build_report.py`, `requirements.txt`, `AUDIT.md`, `.gitignore` under `research_v2/`, this report, and generated `results/` artifacts. Modified: `research_v2/baseline_evaluation.py` and `research_v2/README.md`. Original notebooks, models and the paper are unchanged.
 
 Exact execution commands from the repository root (PowerShell):
 
@@ -118,13 +118,13 @@ git diff --check
 
 Four protocol tests passed: actual-data cadence/horizon and disjoint-label checks, invalid-series rejection, physical-unit inverse-transform checks, and reproduction of the old baseline overlap mechanism. Post-run verification recomputed all aggregate and horizon metrics from persisted forecasts, checked true targets against source data, verified common split/hash metadata, and reloaded all three saved models to reproduce example forecasts within floating-point tolerance. Verification results are stored in `results/verification.json`.
 
-All work remains on `research-paper-v2`. No commit, push or history rewrite was made, so there are no new commit hashes. Tracked-file diff summary follows; newly created files are listed above and are not included by ordinary `git diff --stat` until staged.
+Tracked-file diff summary at report time (newly created files are listed above; ordinary `git diff --stat` excludes them until staged).
 
 ```text
 """+git_diff+"\n```\n"
-    (HERE/"REPORT_FOR_CHATGPT_REVIEW.md").write_text(report,encoding="utf-8")
+    (HERE/"BENCHMARK_REPORT_RAW.md").write_text(report,encoding="utf-8")
     print(effects.to_string(index=False))
-    print("Saved",HERE/"REPORT_FOR_CHATGPT_REVIEW.md")
+    print("Saved",HERE/"BENCHMARK_REPORT_RAW.md")
 
 if __name__ == "__main__":
     main()
