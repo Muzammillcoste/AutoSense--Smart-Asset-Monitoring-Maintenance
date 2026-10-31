@@ -50,7 +50,7 @@ Seeds 11, 21, 42, 84 and 168; every other setting is identical to the benchmark 
 | Tyre pressure | 1.256 ± 0.221 PSI | 1.532 ± 0.260 PSI | 0.510 ± 0.164 | 0.558 PSI (Persistence) |
 | Tyre temperature | 5.731 ± 0.889 °C | 7.030 ± 1.082 °C | −0.835 ± 0.536 | 2.897 °C (Random Forest) |
 
-These figures show how much results vary between training seeds. They are not repeated-split validation or confidence intervals.
+Values are mean ± sample standard deviation across five seeds. They show how much results vary between training seeds. They are not repeated-split validation or confidence intervals.
 
 ## 3. Architecture ablation: LSTM vs Bi-LSTM
 

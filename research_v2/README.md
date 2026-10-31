@@ -17,7 +17,7 @@ It evaluates **sensor forecasting for threshold-based maintenance only**. It doe
 |---|---|
 | [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md) | Main experiment: all metrics, partitions, model settings, environment and verification |
 | [`EXTENDED_EXPERIMENTS.md`](EXTENDED_EXPERIMENTS.md) | Five seeds, architecture and feature ablations, threshold events, bootstrap intervals, NASA C-MAPSS |
-| [`EXPERIMENT_PROTOCOL.md`](EXPERIMENT_PROTOCOL.md) | Design of the extended experiments, fixed before they ran |
+| [`EXPERIMENT_PROTOCOL.md`](EXPERIMENT_PROTOCOL.md) | Summary of the original extended-experiment plan and what was actually run |
 | [`AUDIT.md`](AUDIT.md) | Where the originally reported metrics came from and what they really measure |
 | [`results/README.md`](results/README.md), [`ieee_results/README.md`](ieee_results/README.md) | Guides to the result files |
 | [`kaggle/README.md`](kaggle/README.md) | How the GPU runs were executed on Kaggle |
@@ -33,7 +33,7 @@ It evaluates **sensor forecasting for threshold-based maintenance only**. It doe
 | Tyre temperature (°C) | 5.786 | 3.897 | **2.897** | 6.454 |
 
 - **The Bi-LSTM beats the best baseline on none of the three targets.** Random Forest has the lowest MAE for both temperatures and persistence for tyre pressure.
-- **Five Bi-LSTM seeds** (11, 21, 42, 84, 168): MAE 5.182 ± 0.665 °C (engine), 1.256 ± 0.221 PSI (pressure), 5.731 ± 0.889 °C (tyre temperature). These numbers show seed-to-seed variation. They are not repeated-split validation.
+- **Five Bi-LSTM seeds** (11, 21, 42, 84, 168): MAE 5.182 ± 0.665 °C (engine), 1.256 ± 0.221 PSI (pressure), 5.731 ± 0.889 °C (tyre temperature), given as mean ± sample standard deviation across five seeds. These numbers show seed-to-seed variation. They are not repeated-split validation.
 - **Architecture ablation** (seed 42, LSTM / Bi-LSTM MAE): 9.539 / 6.199 °C, 1.298 / 1.182 PSI, 4.402 / 6.366 °C. Neither architecture is better on every target.
 - **Feature ablation.** Causal lag and rolling features (F2) lower LSTM engine MAE from 9.539 to 5.142 °C, but raise Random Forest tyre-pressure MAE from 0.736 to 0.836 PSI. The effect depends on the target and model.
 - **Proxy threshold events** (thresholds from training data, not fault labels). The Bi-LSTM scores F1 = 0 on engine temperature and tyre pressure. On tyre temperature it scores F1 0.802, but its specificity is 0, so it does not tell events from non-events. Seasonal naive gives the most balanced alerts.
@@ -85,7 +85,7 @@ python research_v2/verify_generators.py        # regenerate the synthetic CSVs a
 python research_v2/verify_results.py           # recompute metrics from saved predictions, reload models
 python research_v2/audit_originals.py          # reproduce the original notebook metrics
 python research_v2/audit_uae_legacy.py         # reproduce the legacy UAE engine metric
-python research_v2/validate_final_result_archives.py --output <scratch>.json   # validate Kaggle archives
+python research_v2/validate_final_result_archives.py --output autosense-validation.json   # validate Kaggle archives
 ```
 
 - **JSON records.** `verify_generators.py`, `verify_results.py` and the two audit scripts rewrite their JSON records in `results/`.

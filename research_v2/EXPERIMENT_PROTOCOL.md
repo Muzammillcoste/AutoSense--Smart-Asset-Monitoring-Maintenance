@@ -1,6 +1,6 @@
 # Experiment protocol for the extended study
 
-This document fixed the design of the extended experiments *before* they were run. It lists the seeds, model settings, thresholds, data splits and the decisions that test results were not allowed to change. The results are in [`EXTENDED_EXPERIMENTS.md`](EXTENDED_EXPERIMENTS.md).
+This document summarises the original experiment plan preserved in the Kaggle input bundles and records the outcomes. It lists the seeds, model settings, thresholds, data splits and the decisions that test results were not allowed to change. The results are in [`EXTENDED_EXPERIMENTS.md`](EXTENDED_EXPERIMENTS.md).
 
 ## The original protocol file
 
