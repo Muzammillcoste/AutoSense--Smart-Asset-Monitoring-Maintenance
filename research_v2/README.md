@@ -1,56 +1,105 @@
-# Research V2: reproducible sensor forecasting
+# Research V2: multi-step sensor forecasting benchmark
 
-This experiment evaluates multi-step sensor forecasts for threshold-based maintenance. It does not evaluate failure prediction, remaining useful life, operational downtime reduction, or real-fleet deployment.
+Re-evaluation of the AutoSense forecasting models, carried out in 2026 after the final-year project. It asks whether a Bi-LSTM forecasts sensor readings 24 hours ahead better than simple baselines when every model uses the same data, partitions and information.
 
-## Run from PowerShell
+It evaluates **sensor forecasting for threshold-based maintenance only**. It does not evaluate failure prediction, remaining useful life, downtime reduction or a real-fleet deployment.
 
-From the repository root, using the existing Python 3.11 environment:
+## Manuscript
 
-```powershell
-.venv/Scripts/python.exe -m unittest discover -s research_v2 -p test_protocol.py -v
-.venv/Scripts/python.exe research_v2/verify_generators.py
-.venv/Scripts/python.exe research_v2/audit_uae_legacy.py
-.venv/Scripts/python.exe -u research_v2/audit_originals.py
-.venv/Scripts/python.exe -u research_v2/bilstm_evaluation.py
+**M. Rizvi, W. Raza, H. Naseer, F. Niaz**, *Benchmarking Multi-Step Sensor Forecasting for Threshold-Based Predictive Maintenance: An Integrated IoT-to-Enterprise Framework*, preprint, Zenodo, 2026, [doi:10.5281/zenodo.22665260](https://doi.org/10.5281/zenodo.22665260).
+
+- PDF (11 pages): [`paper/build/main.pdf`](paper/build/main.pdf)
+- LaTeX source: [`paper/main.tex`](paper/main.tex), with [`references.bib`](paper/references.bib), [`tables/`](paper/tables/) and [`figures/`](paper/figures/)
+
+## Main findings
+
+**Corrected benchmark, seed 42, synthetic data** ([`results/final_comparison.csv`](results/final_comparison.csv)). Test-set MAE in physical units:
+
+| Target | Persistence | Seasonal naive | Random Forest | Bi-LSTM |
+|---|---:|---:|---:|---:|
+| Engine temperature (°C) | 10.157 | 2.623 | **1.708** | 6.199 |
+| Tyre pressure (PSI) | **0.558** | 0.781 | 0.736 | 1.178 |
+| Tyre temperature (°C) | 5.786 | 3.897 | **2.897** | 6.454 |
+
+- **The Bi-LSTM beats the best baseline on none of the three targets.** Random Forest has the lowest MAE for both temperatures and persistence for tyre pressure.
+- **Five Bi-LSTM seeds** (11, 21, 42, 84, 168): MAE 5.182 ± 0.665 °C (engine), 1.256 ± 0.221 PSI (pressure), 5.731 ± 0.889 °C (tyre temperature). These numbers show seed-to-seed variation. They are not repeated-split validation.
+- **Architecture ablation** (seed 42, LSTM / Bi-LSTM MAE): 9.539 / 6.199 °C, 1.298 / 1.182 PSI, 4.402 / 6.366 °C. Neither architecture is better on every target.
+- **Feature ablation**: causal lag and rolling features (F2) lower LSTM engine MAE from 9.539 to 5.142 °C, but raise Random Forest tyre-pressure MAE from 0.736 to 0.836 PSI. The effect depends on the target and model.
+- **Proxy threshold events** (thresholds from training data, not fault labels): the Bi-LSTM scores F1 = 0 on engine temperature and tyre pressure. On tyre temperature it scores F1 0.802, but its false-positive rate is 1.0 and its specificity 0, so it does not tell events from non-events.
+- **Moving-block bootstrap** (2,000 replications), MAE(best baseline) − MAE(Bi-LSTM): [−5.033, −3.955] °C, [−0.845, −0.356] PSI, [−3.732, −3.392] °C. All three intervals exclude zero in favour of the baseline. They account for dependence between windows, but they are not i.i.d. significance tests.
+- **NASA C-MAPSS FD001** (simulated turbofan data, engine-disjoint 70/15/15 split, 30-cycle history, 10-cycle horizon). Normalized macro MAE for the multivariate configuration C1: Random Forest 0.03406, LSTM 0.03460, Bi-LSTM 0.03483 (R² 0.889 / 0.886 / 0.885). On this benchmark the three models perform almost the same.
+
+Detailed reports:
+
+- [`REPORT_FOR_CHATGPT_REVIEW.md`](REPORT_FOR_CHATGPT_REVIEW.md): corrected-benchmark report (all metrics, splits, timing, environment). `build_report.py` writes it under this fixed name.
+- [`IEEE_UPGRADE_REPORT.md`](IEEE_UPGRADE_REPORT.md): extended experiments, recorded software environments and acceptance checks.
+- [`AUDIT.md`](AUDIT.md): audit of the metrics reported originally. For example, the original "0.1795 °C" engine MAE was a normalized value that corresponds to about 17.86 °C.
+
+## Methodology
+
+- **Data.** Three synthetic 2024 series: engine temperature (hourly), tyre pressure and tyre temperature (both 3-hourly). The generator notebooks reproduce them to floating-point precision ([`verify_generators.py`](verify_generators.py)). None is recorded fleet data.
+- **Protocol** ([`protocol.py`](protocol.py)). Raw rows are split chronologically: about 68% train, 12% validation and 20% test. A window belongs to a partition only when its whole target horizon lies inside it. Each model sees seven days of history and forecasts a 24-hour horizon (168→24 hourly steps, 56→8 three-hourly steps).
+- **Training.** Inputs are target history only. MinMax scaling is fitted on training rows. There is no shuffling, and early stopping uses validation loss. Nothing is tuned on test scores. Every model receives identical windows and masks.
+- **Extended experiments.** These are defined in [`CODEX_IEEE_EXECUTION_PLAN.md`](CODEX_IEEE_EXECUTION_PLAN.md) before they were run. That file is the pre-registration document; its SHA256 is recorded in the C-MAPSS results, so it must not be edited. The scripts are in [`ieee_experiments/`](ieee_experiments/). Kaggle inputs and raw outputs are in [`kaggle/`](kaggle/).
+
+## Limitations
+
+- All AutoSense data are synthetic. There is no validation on real fleet data, no failure or RUL target, no certified alert performance and no measured downtime reduction.
+- C-MAPSS is simulator output, not physical flight telemetry. It is used for sensor forecasting only, not RUL estimation.
+- Test windows overlap, so their errors are dependent. The main benchmark uses one chronological test period. On AutoSense data, only the Bi-LSTM is run with several seeds.
+- The C-MAPSS and feature-ablation runs used TensorFlow 2.20.0 and scikit-learn 1.6.1, while the other runs used 2.18.0 and 1.9.0. Bit-for-bit reproduction across hardware or library versions is not guaranteed.
+- The benchmark models are retrained univariate models. They are not the 11-feature models deployed in the prototype ([`../Models and scripts/`](../Models%20and%20scripts/)).
+
+## Folder layout
+
+| Path | Contents |
+|---|---|
+| `protocol.py`, `baseline_evaluation.py`, `bilstm_evaluation.py` | Shared protocol, baselines, Bi-LSTM training |
+| `test_protocol.py`, `verify_generators.py`, `verify_results.py` | Protocol tests, data-generator check, check of saved results |
+| `audit_originals.py`, `audit_uae_legacy.py` | Reproduce the originally reported metrics |
+| `build_report.py`, `validate_final_result_archives.py` | Benchmark report builder, Kaggle-archive validator |
+| [`results/`](results/) | Corrected benchmark: metrics, saved models, scalers, predictions, environment, audit evidence |
+| [`ieee_experiments/`](ieee_experiments/) | Multi-seed, ablation, threshold-event, bootstrap and C-MAPSS scripts and Kaggle notebooks |
+| [`ieee_results/`](ieee_results/) | Outputs of the extended experiments, C-MAPSS split and sensor selection, provenance and validation ledgers |
+| [`kaggle/`](kaggle/) | Kaggle input bundles, raw result archives and run guide |
+| [`figure_generation/`](figure_generation/) | Benchmark figures (`generate_all.py`) and baseline export |
+| [`paper/`](paper/) | Manuscript source, figures, tables and compiled PDF |
+| [`external_data/cmapss/`](external_data/cmapss/) | Where to place the NASA FD001 files (not committed) |
+
+The experiment scripts, `protocol.py` and the C-MAPSS split and sensor-selection files have SHA256 hashes recorded in the result files. Editing them breaks that provenance link.
+
+## Reproduction
+
+Python 3.11. Install [`requirements.txt`](requirements.txt); the figure scripts also need [`figure_generation/requirements.txt`](figure_generation/requirements.txt). Run from the repository root.
+
+Checks that use the saved results (no training):
+
+```sh
+python -m unittest discover -s research_v2 -p test_protocol.py -v   # protocol tests (4)
+python research_v2/verify_generators.py        # regenerate the synthetic CSVs and compare
+python research_v2/verify_results.py           # recompute metrics from saved predictions, reload models
+python research_v2/audit_originals.py          # reproduce the original notebook metrics
+python research_v2/audit_uae_legacy.py         # reproduce the legacy UAE engine metric
+python research_v2/validate_final_result_archives.py --output <scratch>.json   # validate Kaggle archives
 ```
 
-`bilstm_evaluation.py` regenerates the baselines, trains all three models, saves predictions/models/scalers/history, and produces the final comparison. Each run overwrites its research results and invalidates prior completion tables/reports at startup. The report builder requires verification of the exact final comparison file by SHA256. Original notebooks and models are never modified. To run only the corrected baselines:
+`verify_generators.py`, `verify_results.py` and the two audit scripts rewrite their JSON records in `results/`. Without `--output`, the validator overwrites `ieee_results/final_integration_validation.json`.
 
-```powershell
-.venv/Scripts/python.exe research_v2/baseline_evaluation.py
+Full retraining (CPU, slow; overwrites `results/` and the report):
+
+```sh
+python research_v2/bilstm_evaluation.py        # baselines + Bi-LSTM; flags --epochs --batch-size --threads
+python research_v2/build_report.py             # rebuild REPORT_FOR_CHATGPT_REVIEW.md
 ```
 
-Dependencies for reproducing this environment are in `requirements.txt`; no installation was needed for the recorded run. Full environment details are in `results/environment.json`. CPU training takes substantially longer than inference. Defaults are 20 maximum epochs, batch size 64, four intra-op threads and one inter-op thread. Flags: `--epochs`, `--batch-size`, `--threads`. Set budgets before viewing test results; changing them creates a different experiment.
+Extended experiments: the multi-seed, ablation and C-MAPSS runs were trained on Kaggle (see [`kaggle/README.md`](kaggle/README.md)). The C-MAPSS runs need the NASA files described in [`external_data/cmapss/README.md`](external_data/cmapss/README.md). These scripts run locally on CPU and overwrite their outputs in `ieee_results/` and `paper/`. The threshold-event script refits the fixed baselines; the others read saved results:
 
-## Corrected protocol
+```sh
+python research_v2/ieee_experiments/threshold_event_evaluation.py
+python research_v2/ieee_experiments/bootstrap_comparison.py
+python research_v2/ieee_experiments/generate_ieee_tables.py
+python research_v2/ieee_experiments/generate_ieee_figures.py
+python research_v2/figure_generation/generate_all.py
+```
 
-`protocol.py` supplies identical windows and masks to every model. For N raw rows, test starts at floor(0.8*N), and validation starts at floor(0.85*floor(0.8*N)). Training uses approximately the first 68%, validation the next 12%, and testing the final 20%. Random Forest and Bi-LSTM fit on the same first region. Random Forest settings are fixed, and it does not use validation for tuning or refitting. This sacrifices some fitting data to make training exposure equal.
-
-A window belongs to a partition only when its entire target horizon lies inside that partition. Boundary-crossing target windows are discarded. Inputs may contain earlier observations, including observations from the test period once they are available at a later forecast origin. This is rolling-origin evaluation with fixed weights, not a single forecast made at the beginning of the test period. Within-test forecast windows overlap, so errors are dependent; no independent-sample significance claim is made.
-
-The previous baseline split 80/20 **after** making overlapping windows. Its last training target window and first test target window shared 23 engine targets or 7 tyre targets. Those former baseline numbers must not be combined with the corrected experiment. The corrected test boundary is based on raw timestamps and differs from the former window-based boundary.
-
-Inputs are historical target values only, for both learned models. This deliberately changes the original 11-feature setup and isolates a common univariate benchmark; conclusions apply to this configuration, not every possible engineered-feature Bi-LSTM. Persistence repeats the last observation; seasonal naive repeats the previous day. The Bi-LSTM uses the original family: bidirectional LSTM(128), batch normalization, dropout(.2), bidirectional LSTM(64), batch normalization, dropout(.3), LSTM(32), Dense(64, relu), dropout(.2), Dense(horizon). Both bidirectional layers operate solely inside the observed past window.
-
-MinMaxScaler fits only on raw fitting-region values. Training uses MSE/MAE, Adam, no shuffling, seed 42, deterministic TensorFlow operations and early stopping (validation loss, patience 5, best weights restored). No architecture or hyperparameter is selected against test scores. Reproducibility across other hardware/library versions is not guaranteed bit for bit.
-
-Timestamps must be ordered, unique, complete and regularly spaced. Invalid data are rejected instead of silently dropped, deduplicated or resampled. Engine has hourly cadence: 168 input steps and 24 output steps. Tyres have three-hour cadence: 56 input steps and 8 output steps. Every final MAE and RMSE is in degrees Celsius or PSI after inverse scaling; R2 is dimensionless. Aggregate metrics flatten all origin/horizon pairs, and horizon-wise metrics keep each lead separate.
-
-## Outputs
-
-- `results/final_comparison.csv`: all four models and three datasets, including split metadata.
-- `results/baseline_metrics.csv`, `results/bilstm_metrics.csv`, `results/bilstm_horizon_metrics.csv`.
-- `results/<dataset>/`: saved model, scaler parameters, test truth/predictions, forecast starting rows, training history, metadata and dataset SHA256.
-- `results/uae_legacy_audit.json`: direct reproduction of the older UAE engine result after in-memory Keras compatibility migration.
-- `results/legacy_model_audit.json`: separately reproduced original evaluations; **not** aligned benchmark results.
-- `results/notebook_evidence.json`: notebook source with zero-based cell references and stored text outputs.
-- `AUDIT.md`: interpretation and provenance limitations.
-- `REPORT_FOR_CHATGPT_REVIEW.md`: complete experiment report when the run finishes.
-
-Saved `scaler.npz` arrays implement `scaled = raw * scale + min`; invert with `(scaled - min) / scale`. `test_predictions.npz` stores rows in source CSV order. Reload `model.keras` with `tf.keras.models.load_model(path, compile=False)` and provide shape `(windows, lookback_steps, 1)`.
-
-## Data provenance
-
-All three datasets have local synthetic generators, including `Tyre Temperature/generating_data.ipynb`. `verify_generators.py` reproduces all timestamps and target values to floating-point precision (maximum difference below 1.5e-14). None is real operational aviation-fleet data. The 2024 files end at midnight on December 31 rather than covering that entire final day.
-
-Do not revise the paper until experiment results and the audit have been reviewed.
+The manuscript was compiled with XeTeX (`paper/main.tex` → `paper/build/main.pdf`).

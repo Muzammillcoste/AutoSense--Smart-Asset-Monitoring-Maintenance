@@ -18,6 +18,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parent
+ARCHIVES = ROOT / "kaggle"
 STAGE = ROOT / ".integration_staging"
 PINNED = {
     "TensorFlow": "2.18.0",
@@ -96,7 +97,7 @@ def require_recorded_environment(frame: pd.DataFrame, name: str, expected: dict[
 
 
 def archive_members(name: str, required: set[str]) -> None:
-    archive = ROOT / f"{name}.zip"
+    archive = ARCHIVES / f"{name}.zip"
     require(archive.exists(), f"missing archive {archive}")
     with zipfile.ZipFile(archive) as handle:
         members = set(handle.namelist())
@@ -240,14 +241,6 @@ def validate_feature() -> dict:
     }
 
 
-def validate_paper() -> dict:
-    directory = STAGE / "paper_overleaf"
-    archive_members("paper_overleaf", {"main.tex", "references.bib", "tables/dataset_protocol.tex", "tables/main_comparison.tex"})
-    files = ["main.tex", "references.bib", "tables/dataset_protocol.tex", "tables/main_comparison.tex"]
-    same = all(digest(ROOT / "paper" / item) == digest(directory / item) for item in files)
-    return {"accepted": True, "newer_than_committed_source": not same, "checked_files": files}
-
-
 def validate_integrated_artifacts() -> dict:
     """Confirm the accepted-result copies equal their validated ZIP payloads."""
     destination = ROOT / "ieee_results"
@@ -288,12 +281,11 @@ def main() -> None:
         "cmapss_fd001_forecasting_results",
         "cmapss_stage_analysis_results",
         "feature_ablation_results",
-        "paper_overleaf",
     ]
     with tempfile.TemporaryDirectory(prefix="ieee_result_validation_") as temporary:
         STAGE = Path(temporary)
         for name in archive_names:
-            with zipfile.ZipFile(ROOT / f"{name}.zip") as archive:
+            with zipfile.ZipFile(ARCHIVES / f"{name}.zip") as archive:
                 archive.extractall(STAGE / name)
         results: dict[str, dict] = {}
         results["autosense_multiseed"] = validate_autosense()
@@ -301,9 +293,8 @@ def main() -> None:
         results["cmapss_fd001_forecasting"] = validate_cmapss()
         results["cmapss_stage_analysis"] = validate_stage(results["cmapss_fd001_forecasting"]["accepted"])
         results["feature_ablation"] = validate_feature()
-        results["paper_overleaf"] = validate_paper()
         results["integrated_artifacts"] = validate_integrated_artifacts()
-    archives = sorted(ROOT.glob("*_results.zip")) + [ROOT / "paper_overleaf.zip"]
+    archives = sorted(ARCHIVES.glob("*_results.zip"))
     ledger = {
         "original_pinned_environment": PINNED,
         "accepted_environment_policy": ACCEPTED_ENVIRONMENTS,

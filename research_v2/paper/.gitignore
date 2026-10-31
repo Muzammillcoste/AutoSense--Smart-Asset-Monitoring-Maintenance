@@ -1,5 +1,4 @@
 build/*
 !build/main.pdf
 !build/verification.json
-!build/main.log
 .tools/

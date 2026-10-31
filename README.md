@@ -86,7 +86,7 @@ In both paths the alert itself comes from a threshold rule. The ML models only p
 | [`Models and scripts/`](Models%20and%20scripts/) | `main.py` batch pipeline: fetch readings from Swift → feature engineering → three Keras models → post forecasts to Swift. Includes the deployed models and scalers. | Prototype script, see limitations |
 | [`FYP ML Training and Pipeline Code/`](FYP%20ML%20Training%20and%20Pipeline%20Code/) | Original data-generation, training and testing notebooks for the three models | Superseded as evaluation evidence by `research_v2/` |
 | [`Salesforce/`](Salesforce/) | Salesforce DX project with three Apex classes (pull alerts and vehicles from Swift, push status back) and a `Vehicle__c` trigger | The custom-object metadata isn't in the repository |
-| [`research_v2/`](research_v2/) | Corrected forecasting benchmark, audit of the original results, extended experiments, paper sources | See below |
+| [`research_v2/`](research_v2/) | Corrected forecasting benchmark, audit of the original results, extended experiments, paper sources | Manuscript PDF: [`research_v2/paper/build/main.pdf`](research_v2/paper/build/main.pdf). See below |
 | [`Documents/`](Documents/) | Proposal, final report, original paper draft, presentations | Some ML figures in these documents are superseded (see below) |
 
 ## Data sources and simulation
