@@ -224,7 +224,7 @@ def main() -> None:
     tf.config.threading.set_intra_op_parallelism_threads(4); tf.config.threading.set_inter_op_parallelism_threads(1); tf.config.experimental.enable_op_determinism()
     frame = load_fd001(); split = engine_split(frame); sensors = select_sensors(frame, split["train_engine_ids"])
     provenance = run_provenance(
-        ROOT / "CODEX_IEEE_EXECUTION_PLAN.md",
+        ROOT / "IEEE_EXPERIMENT_PROTOCOL.md",
         OUT / "cmapss_fd001_split.json",
         OUT / "cmapss_sensor_selection.csv",
     )

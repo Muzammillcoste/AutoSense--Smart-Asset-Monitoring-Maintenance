@@ -21,9 +21,9 @@ re-zip these files.
 Each notebook checks the SHA256 of every bundle file before it trains. Paths
 below are relative to `research_v2/`.
 
-The two C-MAPSS bundles also contain the original pre-registered protocol
-file, `research_v2/CODEX_IEEE_EXECUTION_PLAN.md`, whose hash is recorded in the
-C-MAPSS results. Its content is summarized in
+The C-MAPSS results also record the SHA256 of the original pre-registered
+protocol file. That file is not included in the bundles, so the C-MAPSS
+notebooks need it supplied separately to rerun. Its content is summarized in
 [`../EXPERIMENT_PROTOCOL.md`](../EXPERIMENT_PROTOCOL.md).
 
 ## AutoSense five-seed Bi-LSTM
@@ -120,7 +120,7 @@ Enable a GPU accelerator. This is the heaviest prepared run: it fits C0/C1
 models for four fixed sensors, including the declared three Bi-LSTM seeds.
 
 Import and run `ieee_experiments/kaggle_cmapss_fd001_forecasting.ipynb` in
-order. It validates the NASA data, execution-plan, split, and selection SHA256
+order. It validates the NASA data, script, split, and selection SHA256
 hashes before fitting. It enforces the fixed sensors `sensor_9`, `sensor_11`,
 `sensor_14`, `sensor_12`, 30-cycle history, 10-cycle horizon, and engine
 disjoint 70/15/15 partition.
@@ -152,7 +152,7 @@ phase does not train models; it only checks and stratifies stored held-out
 forecasts.
 
 Import and run `ieee_experiments/kaggle_cmapss_stage_analysis.ipynb` in order.
-It checks the stage script, plan, NASA FD001, split hashes, and all 44 expected
+It checks the stage script, NASA FD001, split hashes, and all 44 expected
 forecast artifacts before calculating the fixed early/mid/late normalized-life
 bins. It expects exactly 132 output rows.
 

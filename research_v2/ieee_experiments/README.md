@@ -26,4 +26,4 @@ The `kaggle_*.ipynb` notebooks run the Kaggle scripts from the input bundles in 
 ## C-MAPSS requirements
 
 - **Data.** The C-MAPSS scripts need the official NASA FD001 files in [`../external_data/cmapss/`](../external_data/cmapss/); see the README there.
-- **Protocol file.** They also hash the original protocol file `research_v2/CODEX_IEEE_EXECUTION_PLAN.md`. On Kaggle the input bundle supplies it. To run locally, extract it from the bundle as described in [`../EXPERIMENT_PROTOCOL.md`](../EXPERIMENT_PROTOCOL.md).
+- **Protocol file.** They also hash the original protocol file (`research_v2/IEEE_EXPERIMENT_PROTOCOL.md`), which is not distributed; see [`../EXPERIMENT_PROTOCOL.md`](../EXPERIMENT_PROTOCOL.md).

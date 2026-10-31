@@ -1,26 +1,16 @@
 # Experiment protocol for the extended study
 
-This document summarises the original experiment plan preserved in the Kaggle input bundles and records the outcomes. It lists the seeds, model settings, thresholds, data splits and the decisions that test results were not allowed to change. The results are in [`EXTENDED_EXPERIMENTS.md`](EXTENDED_EXPERIMENTS.md).
+This document summarises the original experiment plan and records the outcomes. It lists the seeds, model settings, thresholds, data splits and the decisions that test results were not allowed to change. The results are in [`EXTENDED_EXPERIMENTS.md`](EXTENDED_EXPERIMENTS.md).
 
 ## The original protocol file
 
-The protocol was first written as a detailed step-by-step task plan, saved as `CODEX_IEEE_EXECUTION_PLAN.md`. Its SHA256 is recorded in every C-MAPSS result row and Kaggle manifest as the "Protocol SHA256":
+The protocol was written as a detailed step-by-step plan before any C-MAPSS model was trained. The file itself is not distributed with this repository. Its SHA256 is recorded in every C-MAPSS result row and Kaggle manifest as the "Protocol SHA256":
 
 ```text
 1e72e4109507e7968af365367d855fac495439173f38c4c7a72c4ece71c627bb
 ```
 
-The unchanged original is kept inside both C-MAPSS input bundles in [`kaggle/`](kaggle/). The scientific content is summarized below. To check the recorded hash, run from the repository root:
-
-```sh
-unzip -p research_v2/kaggle/kaggle_cmapss_fd001_forecasting_input_bundle.zip research_v2/CODEX_IEEE_EXECUTION_PLAN.md | sha256sum
-```
-
-The C-MAPSS scripts read this file from `research_v2/` in order to record its hash. Their code is hash-recorded, so it is left unchanged. To run them outside Kaggle, extract it first (the file is git-ignored):
-
-```sh
-unzip -j research_v2/kaggle/kaggle_cmapss_fd001_forecasting_input_bundle.zip research_v2/CODEX_IEEE_EXECUTION_PLAN.md -d research_v2
-```
+The scientific content is summarized below. The C-MAPSS scripts hash this file at run time (`research_v2/IEEE_EXPERIMENT_PROTOCOL.md`, git-ignored), so rerunning them requires the original file, available from the authors on request. The exact script versions that produced the results are kept unchanged in the C-MAPSS input bundles in [`kaggle/`](kaggle/).
 
 ## Research question
 

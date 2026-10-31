@@ -35,7 +35,7 @@ def stage(fraction: float) -> str:
 
 
 def main() -> None:
-    protocol_path = ROOT / "CODEX_IEEE_EXECUTION_PLAN.md"
+    protocol_path = ROOT / "IEEE_EXPERIMENT_PROTOCOL.md"
     split_path = OUT / "cmapss_fd001_split.json"
     split = json.loads(split_path.read_text(encoding="utf-8"))
     test_ids = set(split["test_engine_ids"])
