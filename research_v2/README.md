@@ -11,6 +11,17 @@ It evaluates **sensor forecasting for threshold-based maintenance only**. It doe
 - PDF (11 pages): [`paper/build/main.pdf`](paper/build/main.pdf)
 - LaTeX source: [`paper/main.tex`](paper/main.tex), with [`references.bib`](paper/references.bib), [`tables/`](paper/tables/) and [`figures/`](paper/figures/)
 
+## Documents
+
+| Document | Contents |
+|---|---|
+| [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md) | Main experiment: all metrics, partitions, model settings, environment and verification |
+| [`EXTENDED_EXPERIMENTS.md`](EXTENDED_EXPERIMENTS.md) | Five seeds, architecture and feature ablations, threshold events, bootstrap intervals, NASA C-MAPSS |
+| [`EXPERIMENT_PROTOCOL.md`](EXPERIMENT_PROTOCOL.md) | Design of the extended experiments, fixed before they ran |
+| [`AUDIT.md`](AUDIT.md) | Where the originally reported metrics came from and what they really measure |
+| [`results/README.md`](results/README.md), [`ieee_results/README.md`](ieee_results/README.md) | Guides to the result files |
+| [`kaggle/README.md`](kaggle/README.md) | How the GPU runs were executed on Kaggle |
+
 ## Main findings
 
 **Corrected benchmark, seed 42, synthetic data** ([`results/final_comparison.csv`](results/final_comparison.csv)). Test-set MAE in physical units:
@@ -24,31 +35,25 @@ It evaluates **sensor forecasting for threshold-based maintenance only**. It doe
 - **The Bi-LSTM beats the best baseline on none of the three targets.** Random Forest has the lowest MAE for both temperatures and persistence for tyre pressure.
 - **Five Bi-LSTM seeds** (11, 21, 42, 84, 168): MAE 5.182 ± 0.665 °C (engine), 1.256 ± 0.221 PSI (pressure), 5.731 ± 0.889 °C (tyre temperature). These numbers show seed-to-seed variation. They are not repeated-split validation.
 - **Architecture ablation** (seed 42, LSTM / Bi-LSTM MAE): 9.539 / 6.199 °C, 1.298 / 1.182 PSI, 4.402 / 6.366 °C. Neither architecture is better on every target.
-- **Feature ablation**: causal lag and rolling features (F2) lower LSTM engine MAE from 9.539 to 5.142 °C, but raise Random Forest tyre-pressure MAE from 0.736 to 0.836 PSI. The effect depends on the target and model.
-- **Proxy threshold events** (thresholds from training data, not fault labels): the Bi-LSTM scores F1 = 0 on engine temperature and tyre pressure. On tyre temperature it scores F1 0.802, but its false-positive rate is 1.0 and its specificity 0, so it does not tell events from non-events.
+- **Feature ablation.** Causal lag and rolling features (F2) lower LSTM engine MAE from 9.539 to 5.142 °C, but raise Random Forest tyre-pressure MAE from 0.736 to 0.836 PSI. The effect depends on the target and model.
+- **Proxy threshold events** (thresholds from training data, not fault labels). The Bi-LSTM scores F1 = 0 on engine temperature and tyre pressure. On tyre temperature it scores F1 0.802, but its specificity is 0, so it does not tell events from non-events. Seasonal naive gives the most balanced alerts.
 - **Moving-block bootstrap** (2,000 replications), MAE(best baseline) − MAE(Bi-LSTM): [−5.033, −3.955] °C, [−0.845, −0.356] PSI, [−3.732, −3.392] °C. All three intervals exclude zero in favour of the baseline. They account for dependence between windows, but they are not i.i.d. significance tests.
-- **NASA C-MAPSS FD001** (simulated turbofan data, engine-disjoint 70/15/15 split, 30-cycle history, 10-cycle horizon). Normalized macro MAE for the multivariate configuration C1: Random Forest 0.03406, LSTM 0.03460, Bi-LSTM 0.03483 (R² 0.889 / 0.886 / 0.885). On this benchmark the three models perform almost the same.
-
-Detailed reports:
-
-- [`REPORT_FOR_CHATGPT_REVIEW.md`](REPORT_FOR_CHATGPT_REVIEW.md): corrected-benchmark report (all metrics, splits, timing, environment). `build_report.py` writes it under this fixed name.
-- [`IEEE_UPGRADE_REPORT.md`](IEEE_UPGRADE_REPORT.md): extended experiments, recorded software environments and acceptance checks.
-- [`AUDIT.md`](AUDIT.md): audit of the metrics reported originally. For example, the original "0.1795 °C" engine MAE was a normalized value that corresponds to about 17.86 °C.
+- **NASA C-MAPSS FD001** (simulated turbofan data, engine-disjoint 70/15/15 split, 30-cycle history, 10-cycle horizon). Normalized macro MAE with multivariate input: Random Forest 0.03406, LSTM 0.03460, Bi-LSTM 0.03483 (R² 0.889 / 0.886 / 0.885). The three models perform almost the same, and errors are larger late in engine life.
 
 ## Methodology
 
 - **Data.** Three synthetic 2024 series: engine temperature (hourly), tyre pressure and tyre temperature (both 3-hourly). The generator notebooks reproduce them to floating-point precision ([`verify_generators.py`](verify_generators.py)). None is recorded fleet data.
 - **Protocol** ([`protocol.py`](protocol.py)). Raw rows are split chronologically: about 68% train, 12% validation and 20% test. A window belongs to a partition only when its whole target horizon lies inside it. Each model sees seven days of history and forecasts a 24-hour horizon (168→24 hourly steps, 56→8 three-hourly steps).
 - **Training.** Inputs are target history only. MinMax scaling is fitted on training rows. There is no shuffling, and early stopping uses validation loss. Nothing is tuned on test scores. Every model receives identical windows and masks.
-- **Extended experiments.** These are defined in [`CODEX_IEEE_EXECUTION_PLAN.md`](CODEX_IEEE_EXECUTION_PLAN.md) before they were run. That file is the pre-registration document; its SHA256 is recorded in the C-MAPSS results, so it must not be edited. The scripts are in [`ieee_experiments/`](ieee_experiments/). Kaggle inputs and raw outputs are in [`kaggle/`](kaggle/).
+- **Extended experiments.** Seeds, thresholds, splits and sensor selection were fixed in advance ([`EXPERIMENT_PROTOCOL.md`](EXPERIMENT_PROTOCOL.md)). Scripts are in [`ieee_experiments/`](ieee_experiments/). Kaggle inputs and raw outputs are in [`kaggle/`](kaggle/).
 
 ## Limitations
 
-- All AutoSense data are synthetic. There is no validation on real fleet data, no failure or RUL target, no certified alert performance and no measured downtime reduction.
-- C-MAPSS is simulator output, not physical flight telemetry. It is used for sensor forecasting only, not RUL estimation.
-- Test windows overlap, so their errors are dependent. The main benchmark uses one chronological test period. On AutoSense data, only the Bi-LSTM is run with several seeds.
-- The C-MAPSS and feature-ablation runs used TensorFlow 2.20.0 and scikit-learn 1.6.1, while the other runs used 2.18.0 and 1.9.0. Bit-for-bit reproduction across hardware or library versions is not guaranteed.
-- The benchmark models are retrained univariate models. They are not the 11-feature models deployed in the prototype ([`../Models and scripts/`](../Models%20and%20scripts/)).
+- **Synthetic data.** All AutoSense data are synthetic. There is no validation on real fleet data, no failure or RUL target, no certified alert performance and no measured downtime reduction.
+- **C-MAPSS.** It is simulator output, not physical flight telemetry, and is used for sensor forecasting only.
+- **Dependent errors.** Test windows overlap, so their errors are dependent. The main benchmark uses one chronological test period. On AutoSense data only the Bi-LSTM is run with several seeds.
+- **Software versions.** The C-MAPSS and feature-ablation runs used TensorFlow 2.20.0 and scikit-learn 1.6.1, while the other runs used 2.18.0 and 1.9.0. Bit-for-bit reproduction across hardware or library versions is not guaranteed.
+- **Not the deployed models.** The benchmark models are retrained univariate models. They are not the 11-feature models deployed in the prototype ([`../Models and scripts/`](../Models%20and%20scripts/)).
 
 ## Folder layout
 
@@ -57,16 +62,16 @@ Detailed reports:
 | `protocol.py`, `baseline_evaluation.py`, `bilstm_evaluation.py` | Shared protocol, baselines, Bi-LSTM training |
 | `test_protocol.py`, `verify_generators.py`, `verify_results.py` | Protocol tests, data-generator check, check of saved results |
 | `audit_originals.py`, `audit_uae_legacy.py` | Reproduce the originally reported metrics |
-| `build_report.py`, `validate_final_result_archives.py` | Benchmark report builder, Kaggle-archive validator |
+| `build_report.py`, `validate_final_result_archives.py` | Raw benchmark-report generator, Kaggle-archive validator |
 | [`results/`](results/) | Corrected benchmark: metrics, saved models, scalers, predictions, environment, audit evidence |
-| [`ieee_experiments/`](ieee_experiments/) | Multi-seed, ablation, threshold-event, bootstrap and C-MAPSS scripts and Kaggle notebooks |
-| [`ieee_results/`](ieee_results/) | Outputs of the extended experiments, C-MAPSS split and sensor selection, provenance and validation ledgers |
+| [`ieee_experiments/`](ieee_experiments/) | Extended-experiment scripts and Kaggle notebooks |
+| [`ieee_results/`](ieee_results/) | Extended-experiment outputs, C-MAPSS split and sensor selection, provenance and validation records |
 | [`kaggle/`](kaggle/) | Kaggle input bundles, raw result archives and run guide |
 | [`figure_generation/`](figure_generation/) | Benchmark figures (`generate_all.py`) and baseline export |
 | [`paper/`](paper/) | Manuscript source, figures, tables and compiled PDF |
 | [`external_data/cmapss/`](external_data/cmapss/) | Where to place the NASA FD001 files (not committed) |
 
-The experiment scripts, `protocol.py` and the C-MAPSS split and sensor-selection files have SHA256 hashes recorded in the result files. Editing them breaks that provenance link.
+**Hash-recorded files.** The Python scripts, the C-MAPSS split and sensor-selection files, and the result archives have SHA256 hashes recorded in the result files. They are kept byte-for-byte unchanged, and so are the `ieee_*` folder names, which the scripts and recorded paths refer to. Editing them would break the link between code and results.
 
 ## Reproduction
 
@@ -83,16 +88,19 @@ python research_v2/audit_uae_legacy.py         # reproduce the legacy UAE engine
 python research_v2/validate_final_result_archives.py --output <scratch>.json   # validate Kaggle archives
 ```
 
-`verify_generators.py`, `verify_results.py` and the two audit scripts rewrite their JSON records in `results/`. Without `--output`, the validator overwrites `ieee_results/final_integration_validation.json`.
+- **JSON records.** `verify_generators.py`, `verify_results.py` and the two audit scripts rewrite their JSON records in `results/`.
+- **Validator output.** Without `--output`, the validator overwrites `ieee_results/accepted_integration_validation.json`.
 
-Full retraining (CPU, slow; overwrites `results/` and the report):
+Full retraining (CPU, slow; overwrites `results/`):
 
 ```sh
 python research_v2/bilstm_evaluation.py        # baselines + Bi-LSTM; flags --epochs --batch-size --threads
-python research_v2/build_report.py             # rebuild REPORT_FOR_CHATGPT_REVIEW.md
+python research_v2/build_report.py             # raw report, written as REPORT_FOR_CHATGPT_REVIEW.md
 ```
 
-Extended experiments: the multi-seed, ablation and C-MAPSS runs were trained on Kaggle (see [`kaggle/README.md`](kaggle/README.md)). The C-MAPSS runs need the NASA files described in [`external_data/cmapss/README.md`](external_data/cmapss/README.md). These scripts run locally on CPU and overwrite their outputs in `ieee_results/` and `paper/`. The threshold-event script refits the fixed baselines; the others read saved results:
+`build_report.py` keeps the output filename it had when its hash was recorded. [`BENCHMARK_REPORT.md`](BENCHMARK_REPORT.md) is the edited, readable version of that report.
+
+Extended experiments: the multi-seed, ablation and C-MAPSS runs were trained on Kaggle (see [`kaggle/README.md`](kaggle/README.md)). The C-MAPSS runs need the NASA files described in [`external_data/cmapss/README.md`](external_data/cmapss/README.md) and the protocol file described in [`EXPERIMENT_PROTOCOL.md`](EXPERIMENT_PROTOCOL.md). These scripts run locally on CPU and overwrite their outputs in `ieee_results/` and `paper/`. The threshold-event script refits the fixed baselines; the others read saved results.
 
 ```sh
 python research_v2/ieee_experiments/threshold_event_evaluation.py

@@ -273,7 +273,7 @@ def validate_integrated_artifacts() -> dict:
 def main() -> None:
     global STAGE
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=ROOT / "ieee_results" / "final_integration_validation.json")
+    parser.add_argument("--output", type=Path, default=ROOT / "ieee_results" / "accepted_integration_validation.json")
     args = parser.parse_args()
     archive_names = [
         "architecture_ablation_results",

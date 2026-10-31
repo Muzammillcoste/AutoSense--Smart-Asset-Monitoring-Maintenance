@@ -21,11 +21,16 @@ re-zip these files.
 Each notebook checks the SHA256 of every bundle file before it trains. Paths
 below are relative to `research_v2/`.
 
+The two C-MAPSS bundles also contain the original pre-registered protocol
+file, `research_v2/CODEX_IEEE_EXECUTION_PLAN.md`, whose hash is recorded in the
+C-MAPSS results. Its content is summarized in
+[`../EXPERIMENT_PROTOCOL.md`](../EXPERIMENT_PROTOCOL.md).
+
 ## AutoSense five-seed Bi-LSTM
 
-This notebook runs only Phase B of `CODEX_IEEE_EXECUTION_PLAN.md`: the five
-prescribed Bi-LSTM seeds (`11, 21, 42, 84, 168`) for the three AutoSense
-targets. It does not change any scientific setting.
+This run is study 1 of [`../EXPERIMENT_PROTOCOL.md`](../EXPERIMENT_PROTOCOL.md):
+the five prescribed Bi-LSTM seeds (`11, 21, 42, 84, 168`) for the three
+AutoSense targets. It does not change any scientific setting.
 
 Upload `kaggle/kaggle_multiseed_input_bundle.zip` as a private Kaggle Dataset.
 The notebook extracts it automatically. Its internal layout is:

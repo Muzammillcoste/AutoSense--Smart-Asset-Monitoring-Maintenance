@@ -5,3 +5,5 @@ external_data/cmapss/CMAPSSData.zip
 external_data/cmapss/train_FD001.txt
 external_data/cmapss/test_FD001.txt
 external_data/cmapss/RUL_FD001.txt
+# Original pre-registration plan; the committed copy lives in kaggle/*cmapss*_input_bundle.zip
+CODEX_IEEE_EXECUTION_PLAN.md

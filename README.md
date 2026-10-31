@@ -134,7 +134,7 @@ The Bi-LSTM also failed in the threshold-event test. Forecasts were scored again
 - On engine temperature and tyre pressure, it never predicted a threshold crossing (F1 = 0).
 - On tyre temperature, it predicted a crossing for every window (false-positive rate 1.0).
 
-Further experiments (architecture and feature ablations, block-bootstrap intervals, C-MAPSS forecasting and stage analysis) are documented in [`research_v2/IEEE_UPGRADE_REPORT.md`](research_v2/IEEE_UPGRADE_REPORT.md). The C-MAPSS work forecasts sensor readings only and does not estimate remaining useful life.
+Further experiments (architecture and feature ablations, block-bootstrap intervals, C-MAPSS forecasting and stage analysis) are documented in [`research_v2/EXTENDED_EXPERIMENTS.md`](research_v2/EXTENDED_EXPERIMENTS.md). The C-MAPSS work forecasts sensor readings only and does not estimate remaining useful life.
 
 **Evaluation update.** The original project report and paper draft contain metrics that were superseded by the 2026 audit. Use the corrected benchmark results above when citing this work. The [evaluation audit](research_v2/AUDIT.md) documents the original reporting issues, their reconstruction and the revised protocol.
 
